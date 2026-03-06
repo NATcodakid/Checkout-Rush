@@ -336,48 +336,37 @@ body {
     margin-top: 2px;
 }
 
-/* ===== CHECKOUT PANEL (Minimal Floating UI) ===== */
-#checkout-panel {
+/* ===== FLOATING PANELS (Independent positioning) ===== */
+.floating-receipt,
+.floating-payment {
     position: fixed;
-    inset: 0;
-    pointer-events: none;
-    /* Let clicks pass through to 3D scene */
-    z-index: 20;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: var(--space-xl);
-    background: transparent;
-    border: none;
-    max-height: none;
-}
-
-.panel-section {
-    pointer-events: auto;
-    /* Enable clicks on UI */
-    background: rgba(22, 33, 62, 0.88);
-    backdrop-filter: blur(12px);
+    z-index: 25;
+    background: rgba(22, 33, 62, 0.75);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-md);
     padding: var(--space-md);
     box-shadow: var(--shadow-soft);
-    flex: none;
-    width: 330px;
-    max-height: 70vh;
+    color: var(--color-text);
+    font-family: var(--font-body);
+}
+
+.floating-receipt {
+    top: 90px;
+    left: 20px;
+    width: 240px;
+    max-height: 45vh;
     display: flex;
     flex-direction: column;
 }
 
-.floating-receipt {
-    align-self: flex-start;
-    margin-top: 80px;
-    /* Below HUD top bar */
-}
-
 .floating-payment {
-    align-self: flex-end;
-    margin-bottom: -10px;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    max-height: 70vh;
+    overflow-y: auto;
+    transition: transform 0.35s ease, opacity 0.35s ease;
 }
 
 .floating-payment.hidden {
@@ -386,15 +375,16 @@ body {
     pointer-events: none;
 }
 
-.panel-section h3 {
+.floating-receipt h3,
+.floating-payment h3 {
     font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--color-secondary);
     margin-bottom: var(--space-sm);
 }
 
-.margin-top {
+.mt-sm {
     margin-top: var(--space-md);
 }
 
@@ -770,19 +760,18 @@ body {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-    #checkout-panel {
-        flex-direction: column;
-        justify-content: space-between;
-        padding: var(--space-md);
-    }
-
-    .panel-section {
-        width: 100%;
-        max-height: 40vh;
-    }
-
     .floating-receipt {
-        margin-top: 60px;
+        top: 70px;
+        left: 10px;
+        width: 200px;
+        max-height: 35vh;
+    }
+
+    .floating-payment {
+        right: 10px;
+        bottom: 10px;
+        width: 260px;
+        max-height: 55vh;
     }
 
     .hud-top {
