@@ -381,12 +381,20 @@ export class CheckoutScene {
 
     // ===== ITEMS & INTERACTION =====
     _preloadModels() {
-        const path = 'Assets/3d Models /Items/RedApple.glb';
-        this.gltfLoader.load(path, (gltf) => {
-            const model = gltf.scene;
-            model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
-            this.loadedModels['apple'] = model;
-        });
+        const models = {
+            'apple': 'Assets/3d Models /Items/RedApple.glb',
+            'bread': 'Assets/3d Models /Items/Bread.glb',
+            'beans': 'Assets/3d Models /Items/GreenBeancan.glb',
+            'juice': 'Assets/3d Models /Items/GreenBeancan.glb' /* fallback juice to beans for now */
+        };
+
+        for (const [key, path] of Object.entries(models)) {
+            this.gltfLoader.load(path, (gltf) => {
+                const model = gltf.scene;
+                model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+                this.loadedModels[key] = model;
+            });
+        }
     }
 
     setItems(items) {
