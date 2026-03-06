@@ -66,8 +66,7 @@ export class CheckoutScene {
         // Interaction
         this.raycaster = new THREE.Raycaster();
         this.mouseVec = new THREE.Vector2();
-        this.holdingItem = null;
-        this.holdingOrigPos = null; // Where it was before pickup
+        this.scanning = false; // Lock during scan animation
 
         // Object groups
         this.counter = null;
@@ -656,7 +655,7 @@ export class CheckoutScene {
         this.baggedMeshes.forEach(m => this.scene.remove(m));
         this.itemMeshes = [];
         this.baggedMeshes = [];
-        if (this.holdingItem) { this.scene.remove(this.holdingItem); this.holdingItem = null; }
+        this.scanning = false;
 
         items.forEach((item, i) => {
             let mesh;
@@ -696,73 +695,58 @@ export class CheckoutScene {
         });
     }
 
-    // ===== INTERACTION =====
+    // ===== INTERACTION — Single-click auto-scan =====
     _onClick(e) {
         if (e.target.tagName === 'BUTTON' || e.target.closest('.floating-receipt') || e.target.closest('.floating-payment')) return;
+        if (this.scanning) return; // prevent clicks during scan animation
 
         this.mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
         this.mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
         this.raycaster.setFromCamera(this.mouseVec, this.camera);
 
-        if (this.holdingItem) {
-            // Try to scan
-            const hits = this.raycaster.intersectObject(this.scannerHitbox);
-            if (hits.length > 0) {
-                this._scanItem();
-            } else {
-                // Drop back — smooth animation
-                const item = this.holdingItem;
-                const origPos = this.holdingOrigPos;
-                this.holdingItem = null;
-                this.holdingOrigPos = null;
-                this.itemMeshes.push(item);
-                this._animateObj(item, { x: origPos.x, y: origPos.y, z: origPos.z }, 200);
+        // Try to click an unscanned item
+        const hits = this.raycaster.intersectObjects(this.itemMeshes, true);
+        if (hits.length > 0) {
+            let obj = hits[0].object;
+            while (obj.parent && obj.parent.type !== 'Scene') {
+                if (obj.userData && obj.userData.isItem) break;
+                obj = obj.parent;
             }
-        } else {
-            // Try to pick up
-            const hits = this.raycaster.intersectObjects(this.itemMeshes, true);
-            if (hits.length > 0) {
-                let obj = hits[0].object;
-                while (obj.parent && obj.parent.type !== 'Scene') {
-                    if (obj.userData && obj.userData.isItem) break;
-                    obj = obj.parent;
-                }
-                if (obj && obj.userData && obj.userData.isItem) {
-                    this._pickUp(obj);
-                }
+            if (obj && obj.userData && obj.userData.isItem) {
+                this._autoScan(obj);
             }
         }
     }
 
-    _pickUp(mesh) {
-        this.holdingItem = mesh;
-        this.holdingOrigPos = mesh.position.clone();
+    _autoScan(mesh) {
+        this.scanning = true;
         this.itemMeshes = this.itemMeshes.filter(m => m !== mesh);
 
-        // Smooth animate to "held" position
-        this._animateObj(mesh, { x: 0.35, y: 1.25, z: 0.6 }, 200);
+        // Step 1: Animate item to scanner position (200ms)
+        const scannerPos = this.scannerGroup.position;
+        this._animateObj(mesh, { x: scannerPos.x, y: scannerPos.y + 0.15, z: scannerPos.z }, 200, () => {
 
-        // Pulse the scan ring to hint where to click
-        if (this.scanRing) {
-            this.scanRing.material.emissiveIntensity = 1.5;
-            setTimeout(() => { if (this.scanRing) this.scanRing.material.emissiveIntensity = 0.8; }, 600);
-        }
-    }
+            // Step 2: Flash scanner + notify game logic (after arriving)
+            this.flashScanner();
+            mesh.userData.scanned = true;
+            if (this.onScan) this.onScan(mesh.userData.itemData, mesh.userData.index);
 
-    _scanItem() {
-        const item = this.holdingItem;
-        this.holdingItem = null;
-        this.holdingOrigPos = null;
-        item.userData.scanned = true;
+            // Pulse scan ring
+            if (this.scanRing) {
+                this.scanRing.material.emissiveIntensity = 2.0;
+                setTimeout(() => { if (this.scanRing) this.scanRing.material.emissiveIntensity = 0.8; }, 400);
+            }
 
-        this.flashScanner();
-        if (this.onScan) this.onScan(item.userData.itemData, item.userData.index);
-
-        // Animate to bagged area (right of scanner)
-        const bagX = 1.5 + Math.random() * 0.5;
-        const bagZ = -0.2 + Math.random() * 0.3;
-        this._animateObj(item, { x: bagX, y: 0.99, z: bagZ }, 300);
-        this.baggedMeshes.push(item);
+            // Step 3: After brief pause, slide to bag area (300ms)
+            setTimeout(() => {
+                const bagX = 1.6 + Math.random() * 0.4;
+                const bagZ = -0.2 + Math.random() * 0.3;
+                this._animateObj(mesh, { x: bagX, y: 0.99, z: bagZ }, 300, () => {
+                    this.scanning = false;
+                });
+                this.baggedMeshes.push(mesh);
+            }, 350);
+        });
     }
 
     flashScanner() {
@@ -815,15 +799,9 @@ export class CheckoutScene {
         const ly = this.cameraLookTarget.y + this.mouseY * -0.12;
         this.camera.lookAt(lx, ly, this.cameraLookTarget.z);
 
-        // Held item: gentle bob + spin
-        if (this.holdingItem) {
-            this.holdingItem.rotation.y = t * 1.2;
-            this.holdingItem.position.y = 1.25 + Math.sin(t * 4) * 0.015;
-        }
-
-        // Pulse scan ring
-        if (this.scanRing && this.holdingItem) {
-            this.scanRing.material.emissiveIntensity = 0.8 + Math.sin(t * 6) * 0.4;
+        // Pulse scan ring when actively scanning
+        if (this.scanRing && this.scanning) {
+            this.scanRing.material.emissiveIntensity = 0.8 + Math.sin(t * 8) * 0.6;
         }
 
         this.renderer.render(this.scene, this.camera);
