@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Checkout Rush — a fun 3D checkout game that helps kids ages 7-9 build number sense, addition, and making-change skills.">
+    <title>Checkout Rush — Learn Math by Making Change!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- ===== TITLE SCREEN ===== -->
+    <div id="title-screen" class="screen active">
+        <div class="title-content">
+            <div class="title-logo">
+                <h1 class="game-title">Checkout<span class="title-rush">Rush</span></h1>
+                <p class="title-subtitle">Can you make the right change?</p>
+            </div>
+            <div class="title-buttons">
+                <button id="btn-play" class="btn btn-primary pulse-btn">▶ Play</button>
+                <button id="btn-how-to-play" class="btn btn-secondary">? How to Play</button>
+                <div class="difficulty-select">
+                    <label>Difficulty:</label>
+                    <button class="diff-btn active" data-difficulty="easy">Easy</button>
+                    <button class="diff-btn" data-difficulty="medium">Medium</button>
+                    <button class="diff-btn" data-difficulty="hard">Hard</button>
+                </div>
+            </div>
+            <div class="title-stats" id="title-stats" style="display:none;">
+                <p>🏆 Best Streak: <span id="best-streak-display">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TUTORIAL SCREEN ===== -->
+    <div id="tutorial-screen" class="screen">
+        <div class="tutorial-content">
+            <h2>How to Play</h2>
+            <div class="tutorial-steps">
+                <div class="tutorial-step">
+                    <div class="step-icon">🛒</div>
+                    <h3>1. Scan Items</h3>
+                    <p>Items appear on the counter. Look at each price and find the total.</p>
+                </div>
+                <div class="tutorial-step">
+                    <div class="step-icon">💵</div>
+                    <h3>2. Customer Pays</h3>
+                    <p>The customer gives you money. Figure out how much change to give back.</p>
+                </div>
+                <div class="tutorial-step">
+                    <div class="step-icon">🪙</div>
+                    <h3>3. Make Change</h3>
+                    <p>Click the right coins and bills to return the correct change!</p>
+                </div>
+                <div class="tutorial-step">
+                    <div class="step-icon">⭐</div>
+                    <h3>4. Keep Going!</h3>
+                    <p>Serve customers quickly and accurately to build your streak and earn stars!</p>
+                </div>
+            </div>
+            <button id="btn-tutorial-close" class="btn btn-primary">Got it!</button>
+        </div>
+    </div>
+
+    <!-- ===== GAMEPLAY SCREEN ===== -->
+    <div id="gameplay-screen" class="screen">
+        <!-- Three.js canvas is injected here -->
+        <div id="three-container"></div>
+
+        <!-- HUD Overlay -->
+        <div id="hud">
+            <div class="hud-top">
+                <div class="hud-item" id="hud-score">
+                    <span class="hud-label">Score</span>
+                    <span class="hud-value" id="score-display">0</span>
+                </div>
+                <div class="hud-item" id="hud-streak">
+                    <span class="hud-label">Streak</span>
+                    <span class="hud-value" id="streak-display">0 🔥</span>
+                </div>
+                <div class="hud-item" id="hud-customers">
+                    <span class="hud-label">Customers</span>
+                    <span class="hud-value" id="customers-display">0 / 5</span>
+                </div>
+                <div class="hud-item" id="hud-timer">
+                    <span class="hud-label">Time</span>
+                    <span class="hud-value" id="timer-display">0:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item / Price Panel -->
+        <div id="checkout-panel">
+            <div class="panel-section" id="items-section">
+                <h3>🛒 Items</h3>
+                <div id="items-list"></div>
+                <div class="total-row">
+                    <span>Total:</span>
+                    <strong id="total-display">$0.00</strong>
+                </div>
+            </div>
+            <div class="panel-section" id="payment-section">
+                <h3>💵 Customer Pays</h3>
+                <div id="payment-display" class="payment-amount">$0.00</div>
+                <div class="change-row">
+                    <span>Change Due:</span>
+                    <strong id="change-due-display">$0.00</strong>
+                </div>
+            </div>
+            <div class="panel-section" id="change-section">
+                <h3>🪙 Give Change</h3>
+                <div id="cash-drawer" class="cash-drawer"></div>
+                <div class="change-given-row">
+                    <span>You're giving:</span>
+                    <strong id="change-given-display">$0.00</strong>
+                </div>
+                <div class="change-buttons">
+                    <button id="btn-submit-change" class="btn btn-success">✓ Give Change</button>
+                    <button id="btn-clear-change" class="btn btn-warning">↺ Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Toast -->
+        <div id="feedback-toast" class="feedback-toast hidden">
+            <div class="toast-icon" id="toast-icon">✓</div>
+            <div class="toast-message" id="toast-message">Correct!</div>
+        </div>
+    </div>
+
+    <!-- ===== RESULTS SCREEN ===== -->
+    <div id="results-screen" class="screen">
+        <div class="results-content">
+            <h2 id="results-title">Round Complete!</h2>
+            <div class="results-stars" id="results-stars">⭐⭐⭐</div>
+            <div class="results-grid">
+                <div class="result-item">
+                    <span class="result-label">Score</span>
+                    <span class="result-value" id="result-score">0</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Customers Served</span>
+                    <span class="result-value" id="result-customers">0</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Accuracy</span>
+                    <span class="result-value" id="result-accuracy">0%</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Best Streak</span>
+                    <span class="result-value" id="result-streak">0</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Time</span>
+                    <span class="result-value" id="result-time">0:00</span>
+                </div>
+            </div>
+            <div class="results-tips" id="results-tips"></div>
+            <div class="results-buttons">
+                <button id="btn-play-again" class="btn btn-primary">▶ Play Again</button>
+                <button id="btn-back-to-menu" class="btn btn-secondary">🏠 Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
