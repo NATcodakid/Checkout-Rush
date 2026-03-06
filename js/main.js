@@ -1,27 +1,29 @@
 /**
- * main.js — Checkout Rush main game controller.
+ * main.js — Checkout Rush v2 game controller.
  *
  * Manages screen transitions, game state, round flow, UI updates,
- * and ties together the 3D scene, game data, and analytics.
+ * audio playback, customer queue, and ties everything together.
  */
 
 import { CheckoutScene } from './scene.js';
 import { generateRound, DENOMINATIONS, DIFFICULTY } from './gameData.js';
 import { Analytics } from './analytics.js';
+import { GameAudio } from './audio.js';
 
 // ===== STATE =====
 const state = {
     difficulty: 'easy',
-    screen: 'title',      // title | tutorial | gameplay | results
-    scene: null,           // CheckoutScene instance
+    screen: 'title',
+    scene: null,
 
-    // Round state
+    // Round
     currentRound: null,
     roundIndex: 0,
-    changeGiven: [],       // array of denomination values the player selected
+    changeGiven: [],
     changeGivenTotal: 0,
+    roundLocked: false,  // prevent double-submit
 
-    // Session state
+    // Session
     score: 0,
     streak: 0,
     bestStreak: 0,
@@ -30,7 +32,6 @@ const state = {
     incorrectCount: 0,
     startTime: null,
     timerInterval: null,
-    roundTimer: null,
     elapsedSeconds: 0,
 };
 
@@ -45,13 +46,11 @@ const screens = {
 };
 
 const ui = {
-    // HUD
     scoreDisplay: $('score-display'),
     streakDisplay: $('streak-display'),
     customersDisplay: $('customers-display'),
     timerDisplay: $('timer-display'),
 
-    // Checkout panel
     itemsList: $('items-list'),
     totalDisplay: $('total-display'),
     paymentDisplay: $('payment-display'),
@@ -59,12 +58,10 @@ const ui = {
     cashDrawer: $('cash-drawer'),
     changeGivenDisplay: $('change-given-display'),
 
-    // Feedback
     feedbackToast: $('feedback-toast'),
     toastIcon: $('toast-icon'),
     toastMessage: $('toast-message'),
 
-    // Results
     resultScore: $('result-score'),
     resultCustomers: $('result-customers'),
     resultAccuracy: $('result-accuracy'),
@@ -74,16 +71,16 @@ const ui = {
     resultsTips: $('results-tips'),
     resultsTitle: $('results-title'),
 
-    // Title
     bestStreakDisplay: $('best-streak-display'),
     titleStats: $('title-stats'),
+    soundToggle: $('sound-toggle'),
 };
 
 // ===== INIT =====
 function init() {
     Analytics.init();
 
-    // Show best streak if any
+    // Best streak
     const bestStreak = Analytics.getBestStreak();
     if (bestStreak > 0) {
         ui.titleStats.style.display = 'block';
@@ -92,12 +89,19 @@ function init() {
 
     // Button listeners
     $('btn-play').addEventListener('click', startGame);
-    $('btn-how-to-play').addEventListener('click', () => showScreen('tutorial'));
-    $('btn-tutorial-close').addEventListener('click', () => showScreen('title'));
+    $('btn-how-to-play').addEventListener('click', () => {
+        showScreen('tutorial');
+        GameAudio.playSFX('coinClink');
+    });
+    $('btn-tutorial-close').addEventListener('click', () => {
+        showScreen('title');
+    });
     $('btn-submit-change').addEventListener('click', submitChange);
     $('btn-clear-change').addEventListener('click', clearChange);
     $('btn-play-again').addEventListener('click', startGame);
     $('btn-back-to-menu').addEventListener('click', () => {
+        GameAudio.stopMusic();
+        GameAudio.playMusic('menu');
         if (state.scene) {
             state.scene.dispose();
             state.scene = null;
@@ -105,21 +109,33 @@ function init() {
         showScreen('title');
     });
 
+    // Sound toggle
+    if (ui.soundToggle) {
+        ui.soundToggle.addEventListener('click', () => {
+            const muted = GameAudio.toggleMute();
+            ui.soundToggle.textContent = muted ? '🔇' : '🔊';
+        });
+    }
+
     // Difficulty buttons
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             state.difficulty = btn.dataset.difficulty;
+            GameAudio.playSFX('coinClink');
         });
     });
 
-    // Keyboard shortcut — Enter to submit
+    // Keyboard: Enter to submit
     document.addEventListener('keydown', (e) => {
-        if (state.screen === 'gameplay' && e.key === 'Enter') {
+        if (state.screen === 'gameplay' && e.key === 'Enter' && !state.roundLocked) {
             submitChange();
         }
     });
+
+    // Start menu music
+    GameAudio.playMusic('menu');
 }
 
 // ===== SCREEN MANAGEMENT =====
@@ -131,7 +147,6 @@ function showScreen(name) {
 
 // ===== GAME FLOW =====
 function startGame() {
-    // Reset state
     state.roundIndex = 0;
     state.score = 0;
     state.streak = 0;
@@ -141,32 +156,37 @@ function startGame() {
     state.incorrectCount = 0;
     state.startTime = Date.now();
     state.elapsedSeconds = 0;
+    state.roundLocked = false;
 
-    // Init 3D scene if not already
+    // Init 3D scene
     if (!state.scene) {
         const container = $('three-container');
-        // Clear any previous canvas
         container.innerHTML = '';
         state.scene = new CheckoutScene(container);
     }
 
-    // Start analytics session
+    // Setup customer queue
+    const config = DIFFICULTY[state.difficulty];
+    state.scene.setupQueue(Math.min(config.roundsPerGame, 4));
+
+    // GameAudio
+    GameAudio.stopMusic();
+    GameAudio.playMusic('bgm');
+
+    // Analytics
     Analytics.startSession(state.difficulty);
 
     // Switch to gameplay
     showScreen('gameplay');
 
-    // Start global timer
+    // Timer
     clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
         state.elapsedSeconds++;
         ui.timerDisplay.textContent = formatTime(state.elapsedSeconds);
     }, 1000);
 
-    // Update HUD
     updateHUD();
-
-    // Start first round
     nextRound();
 }
 
@@ -178,24 +198,27 @@ function nextRound() {
         return;
     }
 
-    // Generate round data
+    state.roundLocked = false;
+
+    // Generate round
     state.currentRound = generateRound(state.difficulty);
     state.changeGiven = [];
     state.changeGivenTotal = 0;
 
-    // Update 3D scene
+    // 3D scene: set items (with scan sound + scanner flash)
     state.scene.setItems(state.currentRound.items);
-    state.scene.setCustomer(state.currentRound.customer);
+    GameAudio.playSFX('scan');
+    state.scene.flashScanner();
 
-    // Update UI
+    // UI
     renderItems(state.currentRound.items);
     ui.totalDisplay.textContent = formatMoney(state.currentRound.total);
     ui.paymentDisplay.textContent = formatMoney(state.currentRound.payment);
     ui.changeDueDisplay.textContent = formatMoney(state.currentRound.changeDue);
     ui.changeGivenDisplay.textContent = formatMoney(0);
+    ui.changeGivenDisplay.style.color = '';
     renderCashDrawer();
 
-    // Log action
     Analytics.logAction('round_start', {
         roundIndex: state.roundIndex,
         total: state.currentRound.total,
@@ -204,14 +227,15 @@ function nextRound() {
     });
 }
 
-function submitChange() {
-    if (!state.currentRound) return;
+async function submitChange() {
+    if (!state.currentRound || state.roundLocked) return;
+    state.roundLocked = true;
 
     const expected = state.currentRound.changeDue;
     const given = Math.round(state.changeGivenTotal * 100) / 100;
     const correct = Math.abs(given - expected) < 0.001;
 
-    // Record
+    // Analytics
     Analytics.logRound({
         roundIndex: state.roundIndex,
         changeDue: expected,
@@ -223,30 +247,33 @@ function submitChange() {
     });
 
     if (correct) {
-        // Correct change!
-        state.score += 100 + (state.streak * 10); // bonus for streaks
+        state.score += 100 + (state.streak * 10);
         state.streak++;
         state.bestStreak = Math.max(state.bestStreak, state.streak);
         state.correctCount++;
         state.customersServed++;
 
+        GameAudio.playSFX('correct');
+        if (state.streak >= 3) GameAudio.playSFX('streak');
+
         showFeedback(true, 'Correct! 🎉');
         state.scene.flashRegister(true);
         state.scene.customerReact(true);
     } else {
-        // Wrong change
         state.streak = 0;
         state.incorrectCount++;
         state.customersServed++;
+
+        GameAudio.playSFX('incorrect');
 
         const diff = given - expected;
         let hint;
         if (given === 0) {
             hint = `The change was ${formatMoney(expected)}`;
         } else if (diff > 0) {
-            hint = `Too much! You gave ${formatMoney(diff)} extra`;
+            hint = `Too much! +${formatMoney(diff)} extra`;
         } else {
-            hint = `Not enough! You're ${formatMoney(Math.abs(diff))} short`;
+            hint = `Not enough! ${formatMoney(Math.abs(diff))} short`;
         }
         showFeedback(false, `Oops! ${hint}`);
         state.scene.flashRegister(false);
@@ -256,29 +283,39 @@ function submitChange() {
     state.roundIndex++;
     updateHUD();
 
-    // Slight delay then next round
-    setTimeout(() => {
-        nextRound();
-    }, 1800);
+    // Wait, then advance queue and next round
+    await new Promise(r => setTimeout(r, 1200));
+
+    // Advance queue animation
+    await state.scene.advanceQueue();
+
+    // Add a new customer to the back if more rounds remain
+    const config = DIFFICULTY[state.difficulty];
+    if (state.roundIndex < config.roundsPerGame) {
+        state.scene.addToQueue();
+    }
+
+    // Small pause for queue to settle
+    await new Promise(r => setTimeout(r, 300));
+
+    nextRound();
 }
 
 function endGame() {
     clearInterval(state.timerInterval);
-    clearTimeout(state.roundTimer);
 
-    // End analytics
+    GameAudio.playSFX('roundEnd');
+    GameAudio.stopMusic();
+
     Analytics.endSession(state.score, state.bestStreak);
 
-    // Calculate results
     const totalAttempts = state.correctCount + state.incorrectCount;
     const accuracy = totalAttempts > 0 ? Math.round(state.correctCount / totalAttempts * 100) : 0;
 
-    // Stars: 1 for playing, 2 for >60% accuracy, 3 for >85%
     let stars = 1;
     if (accuracy >= 60) stars = 2;
     if (accuracy >= 85) stars = 3;
 
-    // Update results screen
     ui.resultScore.textContent = state.score;
     ui.resultCustomers.textContent = state.customersServed;
     ui.resultAccuracy.textContent = `${accuracy}%`;
@@ -286,7 +323,6 @@ function endGame() {
     ui.resultTime.textContent = formatTime(state.elapsedSeconds);
     ui.resultsStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
 
-    // Title
     if (accuracy >= 85) {
         ui.resultsTitle.textContent = '⭐ Amazing Work! ⭐';
     } else if (accuracy >= 60) {
@@ -295,10 +331,9 @@ function endGame() {
         ui.resultsTitle.textContent = 'Keep Practicing! 💪';
     }
 
-    // Tips based on performance
     const tips = [];
     if (accuracy < 60) {
-        tips.push('💡 Try counting up from the total to the payment amount to find the change.');
+        tips.push('💡 Try counting up from the total to the payment to find the change.');
     }
     if (state.bestStreak < 3) {
         tips.push('💡 Take your time! Accuracy matters more than speed.');
@@ -308,10 +343,12 @@ function endGame() {
     }
     ui.resultsTips.innerHTML = tips.join('<br>');
 
-    // Update best streak on title screen
     const allTimeBest = Analytics.getBestStreak();
     ui.bestStreakDisplay.textContent = allTimeBest;
     ui.titleStats.style.display = 'block';
+
+    // Play menu music after a pause
+    setTimeout(() => GameAudio.playMusic('menu'), 1500);
 
     showScreen('results');
 }
@@ -338,7 +375,6 @@ function renderItems(items) {
 function renderCashDrawer() {
     ui.cashDrawer.innerHTML = '';
 
-    // Filter denominations based on what makes sense for the change amount
     const maxChange = state.currentRound.changeDue;
     const denoms = DENOMINATIONS.filter(d => d.value <= Math.max(maxChange + 5, 1));
 
@@ -350,7 +386,16 @@ function renderCashDrawer() {
             ${denom.label}
         `;
         btn.addEventListener('click', () => {
+            if (state.roundLocked) return;
             addChange(denom.value);
+
+            // Play coin or bill sound
+            if (denom.type === 'coin') {
+                GameAudio.playSFX('coinClink');
+            } else {
+                GameAudio.playSFX('billRustle');
+            }
+
             btn.classList.add('selected');
             setTimeout(() => btn.classList.remove('selected'), 200);
         });
@@ -363,22 +408,23 @@ function addChange(value) {
     state.changeGivenTotal = Math.round(state.changeGiven.reduce((s, v) => s + v, 0) * 100) / 100;
     ui.changeGivenDisplay.textContent = formatMoney(state.changeGivenTotal);
 
-    // Color feedback
     const expected = state.currentRound.changeDue;
     if (Math.abs(state.changeGivenTotal - expected) < 0.001) {
-        ui.changeGivenDisplay.style.color = '#06d6a0'; // green — exact match
+        ui.changeGivenDisplay.style.color = '#06d6a0';
     } else if (state.changeGivenTotal > expected) {
-        ui.changeGivenDisplay.style.color = '#ef476f'; // red — too much
+        ui.changeGivenDisplay.style.color = '#ef476f';
     } else {
-        ui.changeGivenDisplay.style.color = '#ff6b35'; // orange — keep going
+        ui.changeGivenDisplay.style.color = '#ff6b35';
     }
 }
 
 function clearChange() {
+    if (state.roundLocked) return;
     state.changeGiven = [];
     state.changeGivenTotal = 0;
     ui.changeGivenDisplay.textContent = formatMoney(0);
     ui.changeGivenDisplay.style.color = '';
+    GameAudio.playSFX('coinClink');
 }
 
 function updateHUD() {
@@ -393,14 +439,13 @@ function showFeedback(correct, message) {
     ui.toastIcon.textContent = correct ? '✓' : '✗';
     ui.toastMessage.textContent = message;
 
-    // Force re-animation
     ui.feedbackToast.style.animation = 'none';
-    ui.feedbackToast.offsetHeight; // trigger reflow
+    ui.feedbackToast.offsetHeight;
     ui.feedbackToast.style.animation = '';
 
     setTimeout(() => {
         ui.feedbackToast.className = 'feedback-toast hidden';
-    }, 1500);
+    }, 1200);
 }
 
 // ===== UTILITIES =====
