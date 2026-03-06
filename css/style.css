@@ -336,30 +336,54 @@ body {
     margin-top: 2px;
 }
 
-/* ===== CHECKOUT PANEL ===== */
+/* ===== CHECKOUT PANEL (Minimal Floating UI) ===== */
 #checkout-panel {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
+    pointer-events: none;
+    /* Let clicks pass through to 3D scene */
     z-index: 20;
     display: flex;
-    gap: 2px;
-    background: rgba(22, 33, 62, 0.92);
-    backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    max-height: 45vh;
-    overflow-y: auto;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: var(--space-xl);
+    background: transparent;
+    border: none;
+    max-height: none;
 }
 
 .panel-section {
-    flex: 1;
+    pointer-events: auto;
+    /* Enable clicks on UI */
+    background: rgba(22, 33, 62, 0.88);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
     padding: var(--space-md);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: var(--shadow-soft);
+    flex: none;
+    width: 330px;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.panel-section:last-child {
-    border-right: none;
+.floating-receipt {
+    align-self: flex-start;
+    margin-top: 80px;
+    /* Below HUD top bar */
+}
+
+.floating-payment {
+    align-self: flex-end;
+    margin-bottom: -10px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.floating-payment.hidden {
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .panel-section h3 {
@@ -370,10 +394,16 @@ body {
     margin-bottom: var(--space-sm);
 }
 
+.margin-top {
+    margin-top: var(--space-md);
+}
+
 /* Items list */
 #items-list {
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    flex: 1;
     gap: var(--space-xs);
     margin-bottom: var(--space-sm);
 }
@@ -742,12 +772,17 @@ body {
 @media (max-width: 768px) {
     #checkout-panel {
         flex-direction: column;
-        max-height: 55vh;
+        justify-content: space-between;
+        padding: var(--space-md);
     }
 
     .panel-section {
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        width: 100%;
+        max-height: 40vh;
+    }
+
+    .floating-receipt {
+        margin-top: 60px;
     }
 
     .hud-top {

@@ -99,25 +99,25 @@
         </div>
 
         <!-- Item / Price Panel -->
-        <div id="checkout-panel">
-            <div class="panel-section" id="items-section">
-                <h3>🛒 Items</h3>
+        <div id="checkout-panel" class="minimal-ui">
+            <div class="panel-section floating-receipt" id="items-section">
+                <h3>🛒 Receipt</h3>
                 <div id="items-list"></div>
                 <div class="total-row">
                     <span>Total:</span>
                     <strong id="total-display">$0.00</strong>
                 </div>
             </div>
-            <div class="panel-section" id="payment-section">
+
+            <div class="panel-section floating-payment hidden" id="payment-section">
                 <h3>💵 Customer Pays</h3>
                 <div id="payment-display" class="payment-amount">$0.00</div>
                 <div class="change-row">
                     <span>Change Due:</span>
                     <strong id="change-due-display">$0.00</strong>
                 </div>
-            </div>
-            <div class="panel-section" id="change-section">
-                <h3>🪙 Give Change</h3>
+
+                <h3 class="margin-top">🪙 Give Change</h3>
                 <div id="cash-drawer" class="cash-drawer"></div>
                 <div class="change-given-row">
                     <span>You're giving:</span>

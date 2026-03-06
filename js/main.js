@@ -53,6 +53,7 @@ const ui = {
 
     itemsList: $('items-list'),
     totalDisplay: $('total-display'),
+    paymentSection: $('payment-section'),
     paymentDisplay: $('payment-display'),
     changeDueDisplay: $('change-due-display'),
     cashDrawer: $('cash-drawer'),
@@ -162,7 +163,7 @@ function startGame() {
     if (!state.scene) {
         const container = $('three-container');
         container.innerHTML = '';
-        state.scene = new CheckoutScene(container);
+        state.scene = new CheckoutScene(container, handleItemScanned);
     }
 
     // Setup customer queue
@@ -202,22 +203,20 @@ function nextRound() {
 
     // Generate round
     state.currentRound = generateRound(state.difficulty);
+    state.scannedItems = [];
     state.changeGiven = [];
     state.changeGivenTotal = 0;
 
-    // 3D scene: set items (with scan sound + scanner flash)
+    // 3D scene: set items
     state.scene.setItems(state.currentRound.items);
-    GameAudio.playSFX('scan');
-    state.scene.flashScanner();
 
     // UI
-    renderItems(state.currentRound.items);
-    ui.totalDisplay.textContent = formatMoney(state.currentRound.total);
-    ui.paymentDisplay.textContent = formatMoney(state.currentRound.payment);
-    ui.changeDueDisplay.textContent = formatMoney(state.currentRound.changeDue);
+    ui.itemsList.innerHTML = '';
+    ui.totalDisplay.textContent = formatMoney(0);
+    ui.paymentSection.classList.add('hidden'); // Hide until all items are scanned
     ui.changeGivenDisplay.textContent = formatMoney(0);
     ui.changeGivenDisplay.style.color = '';
-    renderCashDrawer();
+    ui.cashDrawer.innerHTML = '';
 
     Analytics.logAction('round_start', {
         roundIndex: state.roundIndex,
@@ -355,21 +354,44 @@ function endGame() {
 
 // ===== UI RENDERING =====
 
-function renderItems(items) {
-    ui.itemsList.innerHTML = '';
-    items.forEach((item, i) => {
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        row.style.animationDelay = `${i * 0.1}s`;
-        row.innerHTML = `
-            <span class="item-name">
-                <span class="item-emoji">${item.emoji}</span>
-                ${item.name}
-            </span>
-            <span class="item-price">${formatMoney(item.price)}</span>
-        `;
-        ui.itemsList.appendChild(row);
-    });
+// Called by scene.js when player scans an item manually
+function handleItemScanned(item, i) {
+    if (state.roundLocked) return;
+    state.scannedItems.push(item);
+
+    // Receipt UI
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `
+        <span class="item-name">
+            <span class="item-emoji">${item.emoji}</span>
+            ${item.name}
+        </span>
+        <span class="item-price">${formatMoney(item.price)}</span>
+    `;
+    ui.itemsList.appendChild(row);
+    // Auto-scroll to bottom of receipt
+    ui.itemsList.scrollTop = ui.itemsList.scrollHeight;
+
+    // Total Update
+    const currentTotal = state.scannedItems.reduce((sum, item) => sum + item.price, 0);
+    ui.totalDisplay.textContent = formatMoney(currentTotal);
+
+    // Audio feedback handled by 'scene.js' calling scan function, but we can play the actual sound here
+    GameAudio.playSFX('scan');
+
+    // Check if fully scanned
+    if (state.scannedItems.length === state.currentRound.items.length) {
+        // Unlock payment phase
+        setTimeout(() => triggerPaymentPhase(), 700);
+    }
+}
+
+function triggerPaymentPhase() {
+    ui.paymentSection.classList.remove('hidden');
+    ui.paymentDisplay.textContent = formatMoney(state.currentRound.payment);
+    ui.changeDueDisplay.textContent = formatMoney(state.currentRound.changeDue);
+    renderCashDrawer();
 }
 
 function renderCashDrawer() {
