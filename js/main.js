@@ -1,27 +1,37 @@
 /**
- * main.js — Checkout Rush v2 game controller.
+ * main.js — Checkout Rush game controller with Firebase Auth + Firestore.
  *
- * Manages screen transitions, game state, round flow, UI updates,
- * audio playback, customer queue, and ties everything together.
+ * Manages auth flow, screen transitions, game state, round flow,
+ * UI updates, audio, customer queue, and Firestore progress persistence.
  */
 
 import { CheckoutScene } from './scene.js';
 import { generateRound, DENOMINATIONS, DIFFICULTY } from './gameData.js';
 import { Analytics } from './analytics.js';
 import { GameAudio } from './audio.js';
+import {
+    signUpEmail, signInEmail, signInGoogle, signOutUser,
+    onAuthChange, getCurrentUser,
+    saveProgress, loadProgress, saveGameSession, acceptTOS
+} from './firebase.js';
 
 // ===== STATE =====
 const state = {
     difficulty: 'easy',
-    screen: 'title',
+    screen: 'auth',
     scene: null,
+
+    // Auth
+    currentUser: null,
+    firestoreProgress: null,
+    authMode: 'signin', // 'signin' or 'signup'
 
     // Round
     currentRound: null,
     roundIndex: 0,
     changeGiven: [],
     changeGivenTotal: 0,
-    roundLocked: false,  // prevent double-submit
+    roundLocked: false,
 
     // Session
     score: 0,
@@ -39,6 +49,7 @@ const state = {
 const $ = id => document.getElementById(id);
 
 const screens = {
+    auth: $('auth-screen'),
     title: $('title-screen'),
     tutorial: $('tutorial-screen'),
     gameplay: $('gameplay-screen'),
@@ -75,28 +86,71 @@ const ui = {
     bestStreakDisplay: $('best-streak-display'),
     titleStats: $('title-stats'),
     soundToggle: $('sound-toggle'),
+
+    // Auth
+    authForm: $('auth-form'),
+    authEmail: $('auth-email'),
+    authPassword: $('auth-password'),
+    authName: $('auth-name'),
+    authNameField: $('auth-name-field'),
+    authTos: $('auth-tos'),
+    authError: $('auth-error'),
+    authSubmitBtn: $('btn-auth-submit'),
+    authLoading: $('auth-loading'),
+    tosModal: $('tos-modal'),
+
+    // User
+    userBadge: $('user-badge'),
+    userName: $('user-name'),
+    hudUser: $('hud-user'),
+    hudUsername: $('hud-username'),
 };
 
 // ===== INIT =====
 function init() {
     Analytics.init();
 
-    // Best streak
-    const bestStreak = Analytics.getBestStreak();
-    if (bestStreak > 0) {
-        ui.titleStats.style.display = 'block';
-        ui.bestStreakDisplay.textContent = bestStreak;
-    }
+    // ---- Auth Event Listeners ----
+    // Tab toggle
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.authMode = tab.dataset.tab;
+            ui.authNameField.style.display = state.authMode === 'signup' ? 'block' : 'none';
+            ui.authSubmitBtn.textContent = state.authMode === 'signup' ? 'Create Account' : 'Sign In';
+            hideAuthError();
+        });
+    });
 
-    // Button listeners
+    // Auth form submit
+    ui.authForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleAuthSubmit();
+    });
+
+    // Google sign-in
+    $('btn-google-signin').addEventListener('click', handleGoogleSignIn);
+
+    // TOS link
+    $('tos-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        ui.tosModal.style.display = 'flex';
+    });
+    $('tos-close').addEventListener('click', () => {
+        ui.tosModal.style.display = 'none';
+    });
+
+    // Sign out
+    $('btn-sign-out').addEventListener('click', handleSignOut);
+
+    // ---- Game Event Listeners ----
     $('btn-play').addEventListener('click', startGame);
     $('btn-how-to-play').addEventListener('click', () => {
         showScreen('tutorial');
         GameAudio.playSFX('coinClink');
     });
-    $('btn-tutorial-close').addEventListener('click', () => {
-        showScreen('title');
-    });
+    $('btn-tutorial-close').addEventListener('click', () => showScreen('title'));
     $('btn-submit-change').addEventListener('click', submitChange);
     $('btn-clear-change').addEventListener('click', clearChange);
     $('btn-play-again').addEventListener('click', startGame);
@@ -135,14 +189,153 @@ function init() {
         }
     });
 
+    // ---- Firebase Auth State Observer ----
+    onAuthChange(async (user) => {
+        if (user) {
+            state.currentUser = user;
+            await onUserSignedIn(user);
+        } else {
+            state.currentUser = null;
+            state.firestoreProgress = null;
+            showScreen('auth');
+        }
+    });
+
     // Start menu music
     GameAudio.playMusic('menu');
+}
+
+// ===== AUTH HANDLERS =====
+async function handleAuthSubmit() {
+    const email = ui.authEmail.value.trim();
+    const password = ui.authPassword.value;
+    const name = ui.authName.value.trim();
+
+    if (!ui.authTos.checked) {
+        showAuthError('Please agree to the Terms of Service.');
+        return;
+    }
+
+    hideAuthError();
+    setAuthLoading(true);
+
+    try {
+        if (state.authMode === 'signup') {
+            await signUpEmail(email, password, name);
+        } else {
+            await signInEmail(email, password);
+        }
+        // onAuthChange will handle the rest
+    } catch (err) {
+        showAuthError(friendlyError(err.code));
+        setAuthLoading(false);
+    }
+}
+
+async function handleGoogleSignIn() {
+    if (!ui.authTos.checked) {
+        showAuthError('Please agree to the Terms of Service.');
+        return;
+    }
+    hideAuthError();
+    setAuthLoading(true);
+
+    try {
+        await signInGoogle();
+    } catch (err) {
+        showAuthError(friendlyError(err.code));
+        setAuthLoading(false);
+    }
+}
+
+async function handleSignOut() {
+    GameAudio.stopMusic();
+    if (state.scene) {
+        state.scene.dispose();
+        state.scene = null;
+    }
+    await signOutUser();
+    // onAuthChange will show auth screen
+}
+
+async function onUserSignedIn(user) {
+    setAuthLoading(false);
+
+    // Set user UI
+    const displayName = user.displayName || user.email.split('@')[0];
+    ui.userName.textContent = displayName;
+    ui.userBadge.style.display = 'flex';
+    if (ui.hudUser) ui.hudUser.style.display = 'flex';
+    if (ui.hudUsername) ui.hudUsername.textContent = displayName;
+
+    // Load Firestore progress
+    const progress = await loadProgress(user.uid);
+    state.firestoreProgress = progress;
+
+    if (progress) {
+        // Restore stats to title screen
+        if (progress.bestStreak > 0) {
+            ui.titleStats.style.display = 'block';
+            ui.bestStreakDisplay.textContent = progress.bestStreak;
+        }
+    } else {
+        // First time — create initial document and accept TOS
+        await acceptTOS(user.uid);
+        await saveProgress(user.uid, {
+            displayName,
+            email: user.email,
+            bestStreak: 0,
+            totalScore: 0,
+            totalGames: 0,
+            totalCorrect: 0,
+            totalIncorrect: 0,
+        });
+    }
+
+    // Also load localStorage best streak
+    const localBest = Analytics.getBestStreak();
+    if (localBest > 0) {
+        ui.titleStats.style.display = 'block';
+        const displayed = Math.max(localBest, progress?.bestStreak || 0);
+        ui.bestStreakDisplay.textContent = displayed;
+    }
+
+    showScreen('title');
+}
+
+function showAuthError(msg) {
+    ui.authError.textContent = msg;
+    ui.authError.style.display = 'block';
+}
+
+function hideAuthError() {
+    ui.authError.style.display = 'none';
+}
+
+function setAuthLoading(on) {
+    ui.authLoading.style.display = on ? 'flex' : 'none';
+    ui.authSubmitBtn.disabled = on;
+    $('btn-google-signin').disabled = on;
+}
+
+function friendlyError(code) {
+    const map = {
+        'auth/email-already-in-use': 'That email is already registered. Try signing in.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/user-not-found': 'No account found with that email.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/too-many-requests': 'Too many attempts. Please wait a moment.',
+        'auth/popup-closed-by-user': 'Sign-in popup was closed.',
+        'auth/invalid-credential': 'Invalid email or password.',
+    };
+    return map[code] || 'Something went wrong. Please try again.';
 }
 
 // ===== SCREEN MANAGEMENT =====
 function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
+    if (screens[name]) screens[name].classList.add('active');
     state.screen = name;
 }
 
@@ -170,7 +363,7 @@ function startGame() {
     const config = DIFFICULTY[state.difficulty];
     state.scene.setupQueue(Math.min(config.roundsPerGame, 4));
 
-    // GameAudio
+    // Audio
     GameAudio.stopMusic();
     GameAudio.playMusic('bgm');
 
@@ -213,7 +406,7 @@ function nextRound() {
     // UI
     ui.itemsList.innerHTML = '';
     ui.totalDisplay.textContent = formatMoney(0);
-    ui.paymentSection.classList.add('hidden'); // Hide until all items are scanned
+    ui.paymentSection.classList.add('hidden');
     ui.changeGivenDisplay.textContent = formatMoney(0);
     ui.changeGivenDisplay.style.color = '';
     ui.cashDrawer.innerHTML = '';
@@ -284,23 +477,18 @@ async function submitChange() {
 
     // Wait, then advance queue and next round
     await new Promise(r => setTimeout(r, 1200));
-
-    // Advance queue animation
     await state.scene.advanceQueue();
 
-    // Add a new customer to the back if more rounds remain
     const config = DIFFICULTY[state.difficulty];
     if (state.roundIndex < config.roundsPerGame) {
         state.scene.addToQueue();
     }
 
-    // Small pause for queue to settle
     await new Promise(r => setTimeout(r, 300));
-
     nextRound();
 }
 
-function endGame() {
+async function endGame() {
     clearInterval(state.timerInterval);
 
     GameAudio.playSFX('roundEnd');
@@ -331,35 +519,57 @@ function endGame() {
     }
 
     const tips = [];
-    if (accuracy < 60) {
-        tips.push('💡 Try counting up from the total to the payment to find the change.');
-    }
-    if (state.bestStreak < 3) {
-        tips.push('💡 Take your time! Accuracy matters more than speed.');
-    }
-    if (state.difficulty === 'easy' && accuracy >= 80) {
-        tips.push('🌟 Ready for Medium difficulty? Give it a try!');
-    }
+    if (accuracy < 60) tips.push('💡 Try counting up from the total to the payment to find the change.');
+    if (state.bestStreak < 3) tips.push('💡 Take your time! Accuracy matters more than speed.');
+    if (state.difficulty === 'easy' && accuracy >= 80) tips.push('🌟 Ready for Medium difficulty? Give it a try!');
     ui.resultsTips.innerHTML = tips.join('<br>');
 
+    // ---- Save to Firestore ----
+    if (state.currentUser) {
+        const uid = state.currentUser.uid;
+
+        // Save this session
+        await saveGameSession(uid, {
+            difficulty: state.difficulty,
+            score: state.score,
+            accuracy,
+            bestStreak: state.bestStreak,
+            duration: state.elapsedSeconds * 1000,
+            customersServed: state.customersServed,
+            correctCount: state.correctCount,
+            incorrectCount: state.incorrectCount,
+        });
+
+        // Update aggregate progress
+        const prev = state.firestoreProgress || {};
+        const newProgress = {
+            totalScore: (prev.totalScore || 0) + state.score,
+            totalGames: (prev.totalGames || 0) + 1,
+            totalCorrect: (prev.totalCorrect || 0) + state.correctCount,
+            totalIncorrect: (prev.totalIncorrect || 0) + state.incorrectCount,
+            bestStreak: Math.max(prev.bestStreak || 0, state.bestStreak),
+        };
+        await saveProgress(uid, newProgress);
+        state.firestoreProgress = { ...prev, ...newProgress };
+
+        ui.bestStreakDisplay.textContent = newProgress.bestStreak;
+    }
+
     const allTimeBest = Analytics.getBestStreak();
-    ui.bestStreakDisplay.textContent = allTimeBest;
+    const fbBest = state.firestoreProgress?.bestStreak || 0;
+    ui.bestStreakDisplay.textContent = Math.max(allTimeBest, fbBest);
     ui.titleStats.style.display = 'block';
 
-    // Play menu music after a pause
     setTimeout(() => GameAudio.playMusic('menu'), 1500);
-
     showScreen('results');
 }
 
 // ===== UI RENDERING =====
 
-// Called by scene.js when player scans an item manually
 function handleItemScanned(item, i) {
     if (state.roundLocked) return;
     state.scannedItems.push(item);
 
-    // Receipt UI
     const row = document.createElement('div');
     row.className = 'item-row';
     row.innerHTML = `
@@ -370,19 +580,14 @@ function handleItemScanned(item, i) {
         <span class="item-price">${formatMoney(item.price)}</span>
     `;
     ui.itemsList.appendChild(row);
-    // Auto-scroll to bottom of receipt
     ui.itemsList.scrollTop = ui.itemsList.scrollHeight;
 
-    // Total Update
     const currentTotal = state.scannedItems.reduce((sum, item) => sum + item.price, 0);
     ui.totalDisplay.textContent = formatMoney(currentTotal);
 
-    // Audio feedback handled by 'scene.js' calling scan function, but we can play the actual sound here
     GameAudio.playSFX('scan');
 
-    // Check if fully scanned
     if (state.scannedItems.length === state.currentRound.items.length) {
-        // Unlock payment phase
         setTimeout(() => triggerPaymentPhase(), 700);
     }
 }
@@ -410,14 +615,11 @@ function renderCashDrawer() {
         btn.addEventListener('click', () => {
             if (state.roundLocked) return;
             addChange(denom.value);
-
-            // Play coin or bill sound
             if (denom.type === 'coin') {
                 GameAudio.playSFX('coinClink');
             } else {
                 GameAudio.playSFX('billRustle');
             }
-
             btn.classList.add('selected');
             setTimeout(() => btn.classList.remove('selected'), 200);
         });
