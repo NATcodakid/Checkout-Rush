@@ -17,8 +17,81 @@
 </head>
 
 <body>
+    <!-- ===== LANDING SCREEN ===== -->
+    <div id="landing-screen" class="screen landing-wrap active">
+        <nav class="landing-nav">
+            <div class="landing-nav-logo">
+                <span class="logo-emoji">🛒</span> Checkout<span class="title-rush">Rush</span>
+            </div>
+            <div class="landing-nav-actions">
+                <button id="btn-landing-signin" class="btn btn-secondary">Sign In</button>
+                <button id="btn-landing-signup" class="btn btn-primary">Sign Up</button>
+            </div>
+        </nav>
+
+        <header class="landing-hero">
+            <div class="landing-hero-badge">🎓 Educational Game for Kids 7-9</div>
+            <h1 class="landing-title">Master Math by Making <span class="landing-title-rush">Change!</span></h1>
+            <p class="landing-tagline">
+                Welcome to <strong>Checkout Rush</strong>! Step behind the register, scan fun 3D groceries, and
+                calculate correct change. Keep your streak alive, earn coins, and learn practical money math.
+            </p>
+            <div class="landing-hero-btns">
+                <button id="btn-landing-play" class="btn btn-primary btn-large">Create Free Account</button>
+                <button id="btn-landing-guest" class="btn btn-secondary btn-large">Play Without Account →</button>
+            </div>
+        </header>
+
+        <section class="landing-how">
+            <h2 class="landing-section-title">How It Works</h2>
+            <div class="landing-steps">
+                <div class="landing-step">
+                    <div class="step-icon">💻</div>
+                    <h3>1. Scan Items</h3>
+                    <p>Click the 3D groceries on the belt to scan them through the register.</p>
+                </div>
+                <div class="landing-step">
+                    <div class="step-icon">💵</div>
+                    <h3>2. Collect Cash</h3>
+                    <p>Observe the customer's payment and how much the total cost is.</p>
+                </div>
+                <div class="landing-step">
+                    <div class="step-icon">🧠</div>
+                    <h3>3. Make Change</h3>
+                    <p>Drag the exact coins and bills from your till to give the correct change before time runs out!
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <div class="landing-divider"></div>
+
+        <section class="landing-features">
+            <div class="landing-feature-card">
+                <h3>🛍️ 3D Supermarket</h3>
+                <p>Enjoy a fully realized 3D checkout environment built with modern web graphics.</p>
+            </div>
+            <div class="landing-feature-card">
+                <h3>📈 Adaptive Difficulty</h3>
+                <p>Start with simple dollar amounts and work your way up to complex change calculations.</p>
+            </div>
+            <div class="landing-feature-card">
+                <h3>🏆 Shop & Upgrades</h3>
+                <p>Earn coins for correct answers to unlock new wallpapers and register upgrades.</p>
+            </div>
+        </section>
+
+        <div class="landing-cta-strip">
+            <h2 class="landing-cta-text">Ready to become the ultimate cashier?</h2>
+            <div class="landing-hero-btns" style="justify-content: center;">
+                <button id="btn-landing-play2" class="btn btn-primary btn-large">Join Now!</button>
+                <button id="btn-landing-guest2" class="btn btn-secondary btn-large">Try it as Guest</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== AUTH SCREEN ===== -->
-    <div id="auth-screen" class="screen active">
+    <div id="auth-screen" class="screen">
         <div class="auth-card">
             <div class="auth-logo">
                 <h1 class="game-title">Checkout<span class="title-rush">Rush</span></h1>
@@ -75,6 +148,13 @@
                 <div class="spinner"></div>
                 <span>Signing in…</span>
             </div>
+            <div class="auth-footer" style="margin-top:20px; text-align:center;">
+                <button id="btn-play-guest-auth" class="btn-text">Play as Guest instead</button>
+                <div style="margin-top:10px;">
+                    <button id="btn-auth-back" class="btn-text" style="color:var(--color-text-muted);">← Back to
+                        Home</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -108,6 +188,16 @@
 
     <!-- ===== TITLE SCREEN ===== -->
     <div id="title-screen" class="screen">
+        <div class="title-progress-bar" id="title-progress" style="display:none;">
+            <div class="title-progress-header">
+                <span class="title-level-indicator">Level <span id="title-level">1</span>: <span
+                        id="title-rank">Trainee</span></span>
+                <span class="title-coins">🪙 <span id="title-coins">0</span></span>
+            </div>
+            <div class="title-level-track">
+                <div class="title-level-fill" id="title-level-bar" style="width: 0%;"></div>
+            </div>
+        </div>
         <div class="title-content">
             <div class="title-logo">
                 <h1 class="game-title">Checkout<span class="title-rush">Rush</span></h1>
@@ -117,6 +207,11 @@
                 <span id="user-avatar" class="user-avatar">👤</span>
                 <span id="user-name">Player</span>
                 <button id="btn-sign-out" class="btn-sign-out" title="Sign Out">↩ Sign Out</button>
+            </div>
+            <div id="guest-badge" class="user-badge guest-badge" style="display:none;">
+                <span class="user-avatar">👤</span>
+                <span id="guest-name">Guest</span>
+                <button id="btn-create-account-title" class="btn-sign-out" title="Save Progress">💾 Sign Up</button>
             </div>
             <div class="title-buttons">
                 <button id="btn-play" class="btn btn-primary pulse-btn">▶ Play</button>
@@ -188,6 +283,10 @@
                     <span class="hud-label">Time</span>
                     <span class="hud-value" id="timer-display">0:00</span>
                 </div>
+                <div class="hud-item" id="hud-strikes-container">
+                    <span class="hud-label">Strikes</span>
+                    <span class="hud-value" id="hud-strikes">⭕ ⭕ ⭕</span>
+                </div>
                 <button id="sound-toggle" class="sound-toggle" title="Toggle sound">🔊</button>
                 <div id="hud-user" class="hud-user" style="display:none;"><span id="hud-username">Player</span></div>
             </div>
@@ -258,12 +357,23 @@
                 </div>
             </div>
             <div class="results-tips" id="results-tips"></div>
+
+            <div id="guest-results-cta" class="results-guest-cta"
+                style="display:none; text-align:center; margin:15px 0; padding:15px; border-radius:8px; background:rgba(255,255,255,0.1);">
+                <p style="margin:0 0 10px; font-weight:bold;">Great job! Want to save your progress?</p>
+                <button id="btn-create-account-results" class="btn btn-primary"
+                    style="font-size:0.9rem; padding:8px 16px;">Create Free Account</button>
+            </div>
+
             <div class="results-buttons">
                 <button id="btn-play-again" class="btn btn-primary">▶ Play Again</button>
                 <button id="btn-back-to-menu" class="btn btn-secondary">🏠 Menu</button>
             </div>
         </div>
     </div>
+
+    <!-- Container for dynamic floating text elements -->
+    <div id="floating-text-container"></div>
 
     <script type="importmap">
     {

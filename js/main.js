@@ -1,14 +1,14 @@
 /**
- * main.js — Checkout Rush game controller with Firebase Auth + Firestore.
+ * main.js — Checkout Rush game controller.
  *
- * Manages auth flow, screen transitions, game state, round flow,
- * UI updates, audio, customer queue, and Firestore progress persistence.
+ * Level progression, coin economy, upgrade shop, Firebase Auth + Firestore.
  */
 
 import { CheckoutScene } from './scene.js';
-import { generateRound, DENOMINATIONS, DIFFICULTY } from './gameData.js';
+import { generateRound, DENOMINATIONS, LEVELS, calculateCoins } from './gameData.js';
 import { Analytics } from './analytics.js';
 import { GameAudio } from './audio.js';
+import { Shop, UPGRADES, WALLPAPER_CONFIGS } from './shop.js';
 import {
     signUpEmail, signInEmail, signInGoogle, signOutUser,
     onAuthChange, getCurrentUser,
@@ -17,26 +17,38 @@ import {
 
 // ===== STATE =====
 const state = {
-    difficulty: 'easy',
     screen: 'auth',
     scene: null,
+    shop: new Shop(),
 
     // Auth
     currentUser: null,
+    isGuest: false,
     firestoreProgress: null,
-    authMode: 'signin', // 'signin' or 'signup'
+    authMode: 'signin',
+
+    // Level
+    currentLevel: 1,
+    coins: 0,
+    coinsEarnedThisGame: 0,
 
     // Round
     currentRound: null,
     roundIndex: 0,
+    scannedItems: [],
     changeGiven: [],
     changeGivenTotal: 0,
     roundLocked: false,
+
+    // Patience
+    patienceRemaining: 0,
+    patienceInterval: null,
 
     // Session
     score: 0,
     streak: 0,
     bestStreak: 0,
+    strikes: 0,
     customersServed: 0,
     correctCount: 0,
     incorrectCount: 0,
@@ -49,8 +61,10 @@ const state = {
 const $ = id => document.getElementById(id);
 
 const screens = {
+    landing: $('landing-screen'),
     auth: $('auth-screen'),
     title: $('title-screen'),
+    shop: $('shop-screen'),
     tutorial: $('tutorial-screen'),
     gameplay: $('gameplay-screen'),
     results: $('results-screen'),
@@ -69,10 +83,14 @@ const ui = {
     changeDueDisplay: $('change-due-display'),
     cashDrawer: $('cash-drawer'),
     changeGivenDisplay: $('change-given-display'),
+    hintDisplay: $('hint-display'),
+    hintAmount: $('hint-amount'),
 
     feedbackToast: $('feedback-toast'),
     toastIcon: $('toast-icon'),
     toastMessage: $('toast-message'),
+    toastCoins: $('toast-coins'),
+    coinsPopup: $('coins-popup'),
 
     resultScore: $('result-score'),
     resultCustomers: $('result-customers'),
@@ -82,10 +100,29 @@ const ui = {
     resultsStars: $('results-stars'),
     resultsTips: $('results-tips'),
     resultsTitle: $('results-title'),
+    resultCoinsEarned: $('result-coins-earned'),
+    resultsCoinsSummary: $('results-coins-summary'),
+    resultsLevelUp: $('results-level-up'),
+    resultsNextLevel: $('results-next-level'),
 
     bestStreakDisplay: $('best-streak-display'),
     titleStats: $('title-stats'),
     soundToggle: $('sound-toggle'),
+
+    // Level & Coins
+    titleProgress: $('title-progress'),
+    titleLevel: $('title-level'),
+    titleRank: $('title-rank'),
+    titleCoins: $('title-coins'),
+    titleLevelBar: $('title-level-bar'),
+    btnPlayLevel: $('btn-play-level'),
+    hudLevel: $('hud-level'),
+    hudRank: $('hud-rank'),
+    hudCoins: $('hud-coins'),
+
+    // Shop
+    shopGrid: $('shop-grid'),
+    shopCoinsDisplay: $('shop-coins-display'),
 
     // Auth
     authForm: $('auth-form'),
@@ -101,17 +138,39 @@ const ui = {
 
     // User
     userBadge: $('user-badge'),
+    guestBadge: $('guest-badge'),
     userName: $('user-name'),
-    hudUser: $('hud-user'),
-    hudUsername: $('hud-username'),
+    guestResultsCta: $('guest-results-cta'),
 };
 
 // ===== INIT =====
 function init() {
+    console.log('[CR] init() running');
     Analytics.init();
 
-    // ---- Auth Event Listeners ----
-    // Tab toggle
+    // ===== LANDING PAGE BUTTONS =====
+    const goToSignup = () => { state.authMode = 'signup'; setAuthTab('signup'); showScreen('auth'); };
+    const goToSignin = () => { state.authMode = 'signin'; setAuthTab('signin'); showScreen('auth'); };
+    $('btn-landing-play').addEventListener('click', goToSignup);
+    $('btn-landing-play2').addEventListener('click', goToSignup);
+    $('btn-landing-signin').addEventListener('click', goToSignin);
+    $('btn-landing-signup').addEventListener('click', goToSignup);
+    $('btn-landing-guest').addEventListener('click', playAsGuest);
+    $('btn-landing-guest2').addEventListener('click', playAsGuest);
+
+    // Auth back button
+    $('btn-auth-back').addEventListener('click', () => showScreen('landing'));
+
+    // Guest buttons from auth page and title screen
+    $('btn-play-guest-auth').addEventListener('click', playAsGuest);
+    if ($('btn-create-account-title')) {
+        $('btn-create-account-title').addEventListener('click', goToSignup);
+    }
+    if ($('btn-create-account-results')) {
+        $('btn-create-account-results').addEventListener('click', goToSignup);
+    }
+
+    // Auth tabs
     document.querySelectorAll('.auth-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -123,33 +182,17 @@ function init() {
         });
     });
 
-    // Auth form submit
-    ui.authForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        handleAuthSubmit();
-    });
-
-    // Google sign-in
+    ui.authForm.addEventListener('submit', (e) => { e.preventDefault(); handleAuthSubmit(); });
     $('btn-google-signin').addEventListener('click', handleGoogleSignIn);
-
-    // TOS link
-    $('tos-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        ui.tosModal.style.display = 'flex';
-    });
-    $('tos-close').addEventListener('click', () => {
-        ui.tosModal.style.display = 'none';
-    });
-
-    // Sign out
+    $('tos-link').addEventListener('click', (e) => { e.preventDefault(); ui.tosModal.style.display = 'flex'; });
+    $('tos-close').addEventListener('click', () => { ui.tosModal.style.display = 'none'; });
     $('btn-sign-out').addEventListener('click', handleSignOut);
 
-    // ---- Game Event Listeners ----
+    // Game buttons
     $('btn-play').addEventListener('click', startGame);
-    $('btn-how-to-play').addEventListener('click', () => {
-        showScreen('tutorial');
-        GameAudio.playSFX('coinClink');
-    });
+    $('btn-shop').addEventListener('click', () => { renderShop(); showScreen('shop'); GameAudio.playSFX('coinClink'); });
+    $('btn-shop-close').addEventListener('click', () => showScreen('title'));
+    $('btn-how-to-play').addEventListener('click', () => { showScreen('tutorial'); GameAudio.playSFX('coinClink'); });
     $('btn-tutorial-close').addEventListener('click', () => showScreen('title'));
     $('btn-submit-change').addEventListener('click', submitChange);
     $('btn-clear-change').addEventListener('click', clearChange);
@@ -157,14 +200,11 @@ function init() {
     $('btn-back-to-menu').addEventListener('click', () => {
         GameAudio.stopMusic();
         GameAudio.playMusic('menu');
-        if (state.scene) {
-            state.scene.dispose();
-            state.scene = null;
-        }
+        if (state.scene) { state.scene.dispose(); state.scene = null; }
+        updateTitleScreen();
         showScreen('title');
     });
 
-    // Sound toggle
     if (ui.soundToggle) {
         ui.soundToggle.addEventListener('click', () => {
             const muted = GameAudio.toggleMute();
@@ -172,37 +212,28 @@ function init() {
         });
     }
 
-    // Difficulty buttons
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            state.difficulty = btn.dataset.difficulty;
-            GameAudio.playSFX('coinClink');
-        });
-    });
-
     // Keyboard: Enter to submit
     document.addEventListener('keydown', (e) => {
-        if (state.screen === 'gameplay' && e.key === 'Enter' && !state.roundLocked) {
-            submitChange();
-        }
+        if (state.screen === 'gameplay' && e.key === 'Enter' && !state.roundLocked) submitChange();
     });
 
-    // ---- Firebase Auth State Observer ----
+    // Firebase auth observer — do NOT auto-redirect if user is a guest or on landing
     onAuthChange(async (user) => {
         if (user) {
+            state.isGuest = false;
             state.currentUser = user;
             await onUserSignedIn(user);
-        } else {
+        } else if (!state.isGuest && state.screen !== 'landing' && state.screen !== 'auth') {
+            // Signed out mid-game — go back to landing
             state.currentUser = null;
             state.firestoreProgress = null;
-            showScreen('auth');
+            showScreen('landing');
         }
     });
 
-    // Start menu music
     GameAudio.playMusic('menu');
+    // Start on landing page
+    showScreen('landing');
 }
 
 // ===== AUTH HANDLERS =====
@@ -211,21 +242,13 @@ async function handleAuthSubmit() {
     const password = ui.authPassword.value;
     const name = ui.authName.value.trim();
 
-    if (!ui.authTos.checked) {
-        showAuthError('Please agree to the Terms of Service.');
-        return;
-    }
-
+    if (!ui.authTos.checked) { showAuthError('Please agree to the Terms of Service.'); return; }
     hideAuthError();
     setAuthLoading(true);
 
     try {
-        if (state.authMode === 'signup') {
-            await signUpEmail(email, password, name);
-        } else {
-            await signInEmail(email, password);
-        }
-        // onAuthChange will handle the rest
+        if (state.authMode === 'signup') await signUpEmail(email, password, name);
+        else await signInEmail(email, password);
     } catch (err) {
         showAuthError(friendlyError(err.code));
         setAuthLoading(false);
@@ -233,91 +256,77 @@ async function handleAuthSubmit() {
 }
 
 async function handleGoogleSignIn() {
-    if (!ui.authTos.checked) {
-        showAuthError('Please agree to the Terms of Service.');
-        return;
-    }
+    if (!ui.authTos.checked) { showAuthError('Please agree to the Terms of Service.'); return; }
     hideAuthError();
     setAuthLoading(true);
-
-    try {
-        await signInGoogle();
-    } catch (err) {
-        showAuthError(friendlyError(err.code));
-        setAuthLoading(false);
-    }
+    try { await signInGoogle(); } catch (err) { showAuthError(friendlyError(err.code)); setAuthLoading(false); }
 }
 
 async function handleSignOut() {
     GameAudio.stopMusic();
-    if (state.scene) {
-        state.scene.dispose();
-        state.scene = null;
-    }
+    if (state.scene) { state.scene.dispose(); state.scene = null; }
     await signOutUser();
-    // onAuthChange will show auth screen
 }
 
 async function onUserSignedIn(user) {
     setAuthLoading(false);
-
-    // Set user UI
+    state.isGuest = false;
     const displayName = user.displayName || user.email.split('@')[0];
     ui.userName.textContent = displayName;
     ui.userBadge.style.display = 'flex';
-    if (ui.hudUser) ui.hudUser.style.display = 'flex';
-    if (ui.hudUsername) ui.hudUsername.textContent = displayName;
+    if (ui.guestBadge) ui.guestBadge.style.display = 'none';
 
-    // Load Firestore progress
     const progress = await loadProgress(user.uid);
     state.firestoreProgress = progress;
 
     if (progress) {
-        // Restore stats to title screen
+        state.currentLevel = progress.currentLevel || 1;
+        state.coins = progress.coins || 0;
+        state.shop.loadFromFirestore(progress.shop || {});
         if (progress.bestStreak > 0) {
             ui.titleStats.style.display = 'block';
             ui.bestStreakDisplay.textContent = progress.bestStreak;
         }
     } else {
-        // First time — create initial document and accept TOS
+        state.currentLevel = 1;
+        state.coins = 0;
         await acceptTOS(user.uid);
         await saveProgress(user.uid, {
-            displayName,
-            email: user.email,
-            bestStreak: 0,
-            totalScore: 0,
-            totalGames: 0,
-            totalCorrect: 0,
-            totalIncorrect: 0,
+            displayName, email: user.email,
+            bestStreak: 0, totalScore: 0, totalGames: 0,
+            totalCorrect: 0, totalIncorrect: 0,
+            currentLevel: 1, coins: 0, shop: state.shop.getSerializable(),
         });
     }
 
-    // Also load localStorage best streak
-    const localBest = Analytics.getBestStreak();
-    if (localBest > 0) {
-        ui.titleStats.style.display = 'block';
-        const displayed = Math.max(localBest, progress?.bestStreak || 0);
-        ui.bestStreakDisplay.textContent = displayed;
-    }
-
+    updateTitleScreen();
     showScreen('title');
 }
 
-function showAuthError(msg) {
-    ui.authError.textContent = msg;
-    ui.authError.style.display = 'block';
-}
-
-function hideAuthError() {
-    ui.authError.style.display = 'none';
-}
-
+function showAuthError(msg) { ui.authError.textContent = msg; ui.authError.style.display = 'block'; }
+function hideAuthError() { ui.authError.style.display = 'none'; }
 function setAuthLoading(on) {
     ui.authLoading.style.display = on ? 'flex' : 'none';
     ui.authSubmitBtn.disabled = on;
     $('btn-google-signin').disabled = on;
 }
-
+function setAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    ui.authNameField.style.display = tab === 'signup' ? 'block' : 'none';
+    ui.authSubmitBtn.textContent = tab === 'signup' ? 'Create Account' : 'Sign In';
+}
+function playAsGuest() {
+    state.isGuest = true;
+    state.currentUser = null;
+    state.currentLevel = 1;
+    state.coins = 0;
+    // Show guest badge, hide user badge
+    ui.userBadge.style.display = 'none';
+    if (ui.guestBadge) ui.guestBadge.style.display = 'flex';
+    ui.titleProgress.style.display = 'none'; // no progress bar for guests
+    GameAudio.playMusic('menu');
+    showScreen('title');
+}
 function friendlyError(code) {
     const map = {
         'auth/email-already-in-use': 'That email is already registered. Try signing in.',
@@ -334,20 +343,141 @@ function friendlyError(code) {
 
 // ===== SCREEN MANAGEMENT =====
 function showScreen(name) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
+    Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
     if (screens[name]) screens[name].classList.add('active');
     state.screen = name;
 }
 
+// ===== TITLE SCREEN UPDATE =====
+function updateTitleScreen() {
+    if (state.isGuest) return; // guests don't get progress display
+    const lvl = getLevelConfig();
+    ui.titleProgress.style.display = 'block';
+    ui.titleLevel.textContent = state.currentLevel;
+    ui.titleRank.textContent = lvl.name;
+    ui.titleCoins.textContent = state.coins;
+    ui.btnPlayLevel.textContent = state.currentLevel;
+
+    // XP bar: progress within current tier (approx)
+    const tierStart = state.currentLevel <= 3 ? 1 : state.currentLevel <= 6 ? 4 : state.currentLevel <= 10 ? 7 : state.currentLevel <= 14 ? 11 : state.currentLevel <= 18 ? 15 : 19;
+    const tierEnd = state.currentLevel <= 3 ? 3 : state.currentLevel <= 6 ? 6 : state.currentLevel <= 10 ? 10 : state.currentLevel <= 14 ? 14 : state.currentLevel <= 18 ? 18 : 20;
+    const pct = ((state.currentLevel - tierStart) / (tierEnd - tierStart + 1)) * 100;
+    ui.titleLevelBar.style.width = `${Math.min(pct, 100)}%`;
+
+    const localBest = Analytics.getBestStreak();
+    const fbBest = state.firestoreProgress?.bestStreak || 0;
+    const best = Math.max(localBest, fbBest);
+    if (best > 0) {
+        ui.titleStats.style.display = 'block';
+        ui.bestStreakDisplay.textContent = best;
+    }
+}
+
+function getLevelConfig() {
+    const idx = Math.min(state.currentLevel, LEVELS.length) - 1;
+    return LEVELS[idx];
+}
+
+// ===== SHOP =====
+function renderShop() {
+    ui.shopCoinsDisplay.textContent = state.coins;
+    ui.shopGrid.innerHTML = '';
+
+    const activeWp = state.shop.getActiveWallpaper();
+
+    UPGRADES.forEach(upgrade => {
+        const owned = state.shop.getOwnedCount(upgrade.id);
+        const canBuy = state.shop.canBuy(upgrade.id, state.coins);
+        const maxed = owned >= upgrade.maxOwned;
+        const isWallpaper = upgrade.effect?.type === 'wallpaper';
+        const isActiveWp = isWallpaper && upgrade.effect.value === activeWp;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${maxed ? 'owned' : ''} ${isActiveWp ? 'active-wallpaper' : ''}`;
+
+        // Build action area: buy button, owned indicator, or wallpaper set-active button
+        let actionHTML = '';
+        if (maxed || (owned > 0 && isWallpaper)) {
+            const ownedLabel = upgrade.maxOwned > 1
+                ? `✓ Owned (${owned}/${upgrade.maxOwned})`
+                : `✓ Owned`;
+            actionHTML = `<div class="shop-card-owned">${ownedLabel}</div>`;
+            if (isWallpaper) {
+                actionHTML += isActiveWp
+                    ? `<div class="shop-card-active-badge">✦ Active</div>`
+                    : `<button class="shop-card-btn shop-card-set-active">🎨 Set Active</button>`;
+            }
+        } else if (!maxed) {
+            actionHTML = canBuy
+                ? `<button class="shop-card-btn">Buy</button>`
+                : `<button class="shop-card-btn" disabled>Not enough coins</button>`;
+            if (owned > 0) actionHTML += `<div class="shop-card-owned">${owned}/${upgrade.maxOwned}</div>`;
+        }
+
+        card.innerHTML = `
+            <div class="shop-card-icon">${upgrade.icon}</div>
+            <div class="shop-card-name">${upgrade.name}</div>
+            <div class="shop-card-desc">${upgrade.description}</div>
+            <div class="shop-card-price">🪙 ${upgrade.cost}</div>
+            ${actionHTML}
+        `;
+
+        // Buy button
+        const buyBtn = card.querySelector('.shop-card-btn:not(.shop-card-set-active)');
+        if (buyBtn && canBuy && !maxed) {
+            buyBtn.addEventListener('click', () => {
+                const boughtUpgrade = state.shop.buy(upgrade.id);
+                state.coins -= upgrade.cost;
+                GameAudio.playSFX('coinClink');
+                // Auto-activate consumables immediately on purchase
+                if (boughtUpgrade && boughtUpgrade.consumable) {
+                    state.shop.activateConsumable(upgrade.id);
+                }
+                // Auto-select first wallpaper bought
+                if (isWallpaper && !state.shop.getActiveWallpaper()) {
+                    state.shop.setActiveWallpaper(upgrade.effect.value);
+                }
+                saveShopState();
+                renderShop();
+            });
+        }
+
+        // Wallpaper "Set Active" button
+        const setActiveBtn = card.querySelector('.shop-card-set-active');
+        if (setActiveBtn) {
+            setActiveBtn.addEventListener('click', () => {
+                state.shop.setActiveWallpaper(upgrade.effect.value);
+                GameAudio.playSFX('coinClink');
+                saveShopState();
+                renderShop();
+            });
+        }
+
+        ui.shopGrid.appendChild(card);
+    });
+}
+
+async function saveShopState() {
+    if (!state.currentUser) return;
+    await saveProgress(state.currentUser.uid, {
+        coins: state.coins,
+        shop: state.shop.getSerializable(),
+    });
+}
+
 // ===== GAME FLOW =====
-function startGame() {
+async function startGame() {
+    const lvl = getLevelConfig();
+
     state.roundIndex = 0;
     state.score = 0;
     state.streak = 0;
     state.bestStreak = 0;
+    state.strikes = 0;
     state.customersServed = 0;
     state.correctCount = 0;
     state.incorrectCount = 0;
+    state.coinsEarnedThisGame = 0;
     state.startTime = Date.now();
     state.elapsedSeconds = 0;
     state.roundLocked = false;
@@ -357,23 +487,46 @@ function startGame() {
         const container = $('three-container');
         container.innerHTML = '';
         state.scene = new CheckoutScene(container, handleItemScanned);
+        await state.scene.waitForLoad();
+        state.scene._populateShelves();
+    } else {
+        await state.scene.waitForLoad();
     }
 
-    // Setup customer queue
-    const config = DIFFICULTY[state.difficulty];
-    state.scene.setupQueue(Math.min(config.roundsPerGame, 4));
+    state.scene.setupQueue(Math.min(lvl.customers, 4));
 
-    // Audio
+    // Set up patience on the 3D scene
+    state.scene.setPatienceMax(lvl.patience || 0);
+
+    // Golden scanner cosmetic — re-apply every time (scene may be reused)
+    if (state.shop.hasGoldenScanner() && state.scene.scanRing) {
+        state.scene.scanRing.material.color.setHex(0xffd700);
+        state.scene.scanRing.material.emissive.setHex(0xffd700);
+    } else if (state.scene.scanRing) {
+        state.scene.scanRing.material.color.setHex(0x00ff88);
+        state.scene.scanRing.material.emissive.setHex(0x00cc66);
+    }
+
+    // Always re-apply wallpaper (covers upgrades purchased mid-session)
+    const wpKey = state.shop.getActiveWallpaper();
+    if (wpKey && WALLPAPER_CONFIGS[wpKey]) {
+        state.scene.applyWallpaper(WALLPAPER_CONFIGS[wpKey]);
+    } else {
+        // Restore default store colours
+        state.scene.applyWallpaper(WALLPAPER_CONFIGS['default']);
+    }
+
+    // Show first-scan prompt for first round only (cleared after first click)
+    state.isFirstScanThisLevel = true;
+
     GameAudio.stopMusic();
     GameAudio.playMusic('bgm');
+    Analytics.startSession('level_' + state.currentLevel);
 
-    // Analytics
-    Analytics.startSession(state.difficulty);
-
-    // Switch to gameplay
     showScreen('gameplay');
+    ui.hudLevel.textContent = state.currentLevel;
+    ui.hudCoins.textContent = state.coins;
 
-    // Timer
     clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
         state.elapsedSeconds++;
@@ -385,49 +538,69 @@ function startGame() {
 }
 
 function nextRound() {
-    const config = DIFFICULTY[state.difficulty];
-
-    if (state.roundIndex >= config.roundsPerGame) {
-        endGame();
-        return;
-    }
+    const lvl = getLevelConfig();
+    if (state.roundIndex >= lvl.customers) { endGame(); return; }
 
     state.roundLocked = false;
-
-    // Generate round
-    state.currentRound = generateRound(state.difficulty);
+    state.currentRound = generateRound(lvl);
     state.scannedItems = [];
     state.changeGiven = [];
     state.changeGivenTotal = 0;
 
-    // 3D scene: set items
     state.scene.setItems(state.currentRound.items);
+    state.scene.highlightItems(); // Pulse unscanned items so player knows to click them
 
-    // UI
     ui.itemsList.innerHTML = '';
     ui.totalDisplay.textContent = formatMoney(0);
     ui.paymentSection.classList.add('hidden');
     ui.changeGivenDisplay.textContent = formatMoney(0);
     ui.changeGivenDisplay.style.color = '';
     ui.cashDrawer.innerHTML = '';
+    ui.hintDisplay.style.display = 'none';
 
-    Analytics.logAction('round_start', {
-        roundIndex: state.roundIndex,
-        total: state.currentRound.total,
-        payment: state.currentRound.payment,
-        changeDue: state.currentRound.changeDue,
-    });
+    // Show "Click items to scan" prompt for new players (first round only)
+    if (state.isFirstScanThisLevel) {
+        showScanPrompt();
+    }
+
+    // Start patience countdown
+    clearInterval(state.patienceInterval);
+    if (lvl.patience > 0) {
+        const bonusTime = state.shop.getTimerBonus ? state.shop.getTimerBonus() : 0;
+        state.patienceRemaining = lvl.patience + bonusTime;
+        state.scene.setPatienceMax(state.patienceRemaining);
+        state.scene.updatePatience(state.patienceRemaining);
+
+        state.patienceInterval = setInterval(() => {
+            state.patienceRemaining -= 0.5;
+            state.scene.updatePatience(state.patienceRemaining);
+            if (state.patienceRemaining <= 0) {
+                clearInterval(state.patienceInterval);
+                onCustomerLeft();
+            }
+        }, 500);
+    }
 }
 
 async function submitChange() {
     if (!state.currentRound || state.roundLocked) return;
     state.roundLocked = true;
+    clearInterval(state.patienceInterval);
+    state.scene.removePatienceBar();
 
+    const lvl = getLevelConfig();
     const expected = state.currentRound.changeDue;
     const given = Math.round(state.changeGivenTotal * 100) / 100;
     const correct = Math.abs(given - expected) < 0.001;
 
-    // Analytics
+    // Calculate coins
+    let earnedCoins = calculateCoins(correct, state.streak, lvl);
+    earnedCoins = Math.floor(earnedCoins * state.shop.getCoinMultiplier());
+    earnedCoins = Math.floor(earnedCoins * (1 + state.shop.getTipBonus()));
+    state.coins += earnedCoins;
+    state.coinsEarnedThisGame += earnedCoins;
+    ui.hudCoins.textContent = state.coins;
+
     Analytics.logRound({
         roundIndex: state.roundIndex,
         changeDue: expected,
@@ -448,7 +621,7 @@ async function submitChange() {
         GameAudio.playSFX('correct');
         if (state.streak >= 3) GameAudio.playSFX('streak');
 
-        showFeedback(true, 'Correct! 🎉');
+        showFeedback(true, 'Correct! 🎉', earnedCoins);
         state.scene.flashRegister(true);
         state.scene.customerReact(true);
     } else {
@@ -459,41 +632,90 @@ async function submitChange() {
         GameAudio.playSFX('incorrect');
 
         const diff = given - expected;
-        let hint;
-        if (given === 0) {
-            hint = `The change was ${formatMoney(expected)}`;
-        } else if (diff > 0) {
-            hint = `Too much! +${formatMoney(diff)} extra`;
-        } else {
-            hint = `Not enough! ${formatMoney(Math.abs(diff))} short`;
-        }
-        showFeedback(false, `Oops! ${hint}`);
+        let hint = given === 0 ? `The change was ${formatMoney(expected)}`
+            : diff > 0 ? `Too much! +${formatMoney(diff)} extra`
+                : `Not enough! ${formatMoney(Math.abs(diff))} short`;
+        showFeedback(false, `Oops! ${hint}`, earnedCoins);
         state.scene.flashRegister(false);
         state.scene.customerReact(false);
+
+        // Strike logic & Juice
+        state.strikes++;
+        document.body.classList.remove('shake', 'flash-red');
+        void document.body.offsetWidth; // force reflow
+        document.body.classList.add('shake', 'flash-red');
+
+        if (state.strikes >= 3) {
+            updateHUD();
+            await new Promise(r => setTimeout(r, 1200));
+            endGame(true);
+            return;
+        }
     }
 
     state.roundIndex++;
     updateHUD();
 
-    // Wait, then advance queue and next round
+    // Show coins popup
+    showCoinsPopup(earnedCoins);
+
     await new Promise(r => setTimeout(r, 1200));
     await state.scene.advanceQueue();
 
-    const config = DIFFICULTY[state.difficulty];
-    if (state.roundIndex < config.roundsPerGame) {
-        state.scene.addToQueue();
-    }
+    const maxCustomers = lvl.customers;
+    if (state.roundIndex < maxCustomers) state.scene.addToQueue();
 
     await new Promise(r => setTimeout(r, 300));
     nextRound();
 }
 
-async function endGame() {
+async function onCustomerLeft() {
+    if (!state.currentRound || state.roundLocked) return;
+    state.roundLocked = true;
+
+    // Customer leaves — count as incorrect, 0 coins
+    state.streak = 0;
+    state.incorrectCount++;
+    state.customersServed++;
+    state.roundIndex++;
+
+    GameAudio.playSFX('incorrect');
+    showFeedback(false, 'Too slow! Customer left 😤', 0);
+    state.scene.flashRegister(false);
+    state.scene.customerAngry();  // Angry stomp/shake animation
+
+    // Strike logic & Juice
+    state.strikes++;
+    document.body.classList.remove('shake', 'flash-red');
+    void document.body.offsetWidth; // force reflow
+    document.body.classList.add('shake', 'flash-red');
+
+    updateHUD();
+
+    if (state.strikes >= 3) {
+        await new Promise(r => setTimeout(r, 1200));
+        endGame(true);
+        return;
+    }
+
+    await new Promise(r => setTimeout(r, 1200));
+    await state.scene.advanceQueue();
+
+    const lvl = getLevelConfig();
+    if (state.roundIndex < lvl.customers) state.scene.addToQueue();
+
+    await new Promise(r => setTimeout(r, 300));
+    nextRound();
+}
+
+async function endGame(isGameOver = false) {
     clearInterval(state.timerInterval);
+    clearInterval(state.patienceInterval);
+    state.scene.removePatienceBar();
+    state.shop.clearConsumables();
 
     GameAudio.playSFX('roundEnd');
     GameAudio.stopMusic();
-
     Analytics.endSession(state.score, state.bestStreak);
 
     const totalAttempts = state.correctCount + state.incorrectCount;
@@ -509,28 +731,43 @@ async function endGame() {
     ui.resultStreak.textContent = state.bestStreak;
     ui.resultTime.textContent = formatTime(state.elapsedSeconds);
     ui.resultsStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    ui.resultCoinsEarned.textContent = state.coinsEarnedThisGame;
 
-    if (accuracy >= 85) {
-        ui.resultsTitle.textContent = '⭐ Amazing Work! ⭐';
-    } else if (accuracy >= 60) {
-        ui.resultsTitle.textContent = 'Great Job! 👏';
-    } else {
+    // Level up logic
+    const canLevelUp = !isGameOver && accuracy >= 50 && state.currentLevel < LEVELS.length;
+    if (isGameOver) {
+        ui.resultsLevelUp.style.display = 'none';
+        ui.resultsTitle.textContent = 'Game Over! 3 Strikes ❌';
+        $('btn-play-again').textContent = `↺ Retry Level ${state.currentLevel}`;
+    } else if (canLevelUp) {
+        state.currentLevel++;
+        ui.resultsLevelUp.style.display = 'block';
+        ui.resultsNextLevel.textContent = `Level ${state.currentLevel} — ${getLevelConfig().name}`;
+        ui.resultsTitle.textContent = '🎉 Level Complete!';
+        $('btn-play-again').textContent = `▶ Play Level ${state.currentLevel}`;
+    } else if (accuracy < 50) {
+        ui.resultsLevelUp.style.display = 'none';
         ui.resultsTitle.textContent = 'Keep Practicing! 💪';
+        $('btn-play-again').textContent = `↺ Retry Level ${state.currentLevel}`;
+    } else {
+        ui.resultsLevelUp.style.display = 'none';
+        if (accuracy >= 85) ui.resultsTitle.textContent = '⭐ Amazing Work! ⭐';
+        else ui.resultsTitle.textContent = 'Great Job! 👏';
+        $('btn-play-again').textContent = `▶ Play Level ${state.currentLevel}`;
     }
 
     const tips = [];
-    if (accuracy < 60) tips.push('💡 Try counting up from the total to the payment to find the change.');
-    if (state.bestStreak < 3) tips.push('💡 Take your time! Accuracy matters more than speed.');
-    if (state.difficulty === 'easy' && accuracy >= 80) tips.push('🌟 Ready for Medium difficulty? Give it a try!');
+    if (accuracy < 60) tips.push('💡 Try counting up from the total to the payment.');
+    if (state.bestStreak < 3) tips.push('💡 Take your time! Accuracy counts more than speed.');
+    if (state.coinsEarnedThisGame > 0) tips.push(`🪙 You earned ${state.coinsEarnedThisGame} coins! Check the shop.`);
     ui.resultsTips.innerHTML = tips.join('<br>');
 
-    // ---- Save to Firestore ----
-    if (state.currentUser) {
+    // Save to Firestore (skip for guests)
+    if (state.currentUser && !state.isGuest) {
         const uid = state.currentUser.uid;
 
-        // Save this session
         await saveGameSession(uid, {
-            difficulty: state.difficulty,
+            level: state.currentLevel,
             score: state.score,
             accuracy,
             bestStreak: state.bestStreak,
@@ -538,9 +775,9 @@ async function endGame() {
             customersServed: state.customersServed,
             correctCount: state.correctCount,
             incorrectCount: state.incorrectCount,
+            coinsEarned: state.coinsEarnedThisGame,
         });
 
-        // Update aggregate progress
         const prev = state.firestoreProgress || {};
         const newProgress = {
             totalScore: (prev.totalScore || 0) + state.score,
@@ -548,6 +785,9 @@ async function endGame() {
             totalCorrect: (prev.totalCorrect || 0) + state.correctCount,
             totalIncorrect: (prev.totalIncorrect || 0) + state.incorrectCount,
             bestStreak: Math.max(prev.bestStreak || 0, state.bestStreak),
+            currentLevel: state.currentLevel,
+            coins: state.coins,
+            shop: state.shop.getSerializable(),
         };
         await saveProgress(uid, newProgress);
         state.firestoreProgress = { ...prev, ...newProgress };
@@ -555,71 +795,104 @@ async function endGame() {
         ui.bestStreakDisplay.textContent = newProgress.bestStreak;
     }
 
-    const allTimeBest = Analytics.getBestStreak();
-    const fbBest = state.firestoreProgress?.bestStreak || 0;
-    ui.bestStreakDisplay.textContent = Math.max(allTimeBest, fbBest);
     ui.titleStats.style.display = 'block';
-
     setTimeout(() => GameAudio.playMusic('menu'), 1500);
+
+    // Show guest CTA on results screen
+    if (ui.guestResultsCta) {
+        ui.guestResultsCta.style.display = state.isGuest ? 'flex' : 'none';
+    }
+
     showScreen('results');
 }
 
-// ===== UI RENDERING =====
-
+// ===== UI =====
 function handleItemScanned(item, i) {
     if (state.roundLocked) return;
+
+    // Dismiss prompt on first scan
+    if (state.isFirstScanThisLevel) {
+        state.isFirstScanThisLevel = false;
+        hideScanPrompt();
+    }
+
     state.scannedItems.push(item);
 
     const row = document.createElement('div');
     row.className = 'item-row';
     row.innerHTML = `
-        <span class="item-name">
-            <span class="item-emoji">${item.emoji}</span>
-            ${item.name}
-        </span>
+        <span class="item-name"><span class="item-emoji">${item.emoji}</span>${item.name}</span>
         <span class="item-price">${formatMoney(item.price)}</span>
     `;
     ui.itemsList.appendChild(row);
     ui.itemsList.scrollTop = ui.itemsList.scrollHeight;
 
-    const currentTotal = state.scannedItems.reduce((sum, item) => sum + item.price, 0);
+    const currentTotal = state.scannedItems.reduce((s, it) => s + it.price, 0);
     ui.totalDisplay.textContent = formatMoney(currentTotal);
+
+    // Juice: Spawn floating text near center
+    spawnFloatingText(`+$${item.price.toFixed(2)}`, window.innerWidth * 0.5 + (Math.random() * 100 - 50), window.innerHeight * 0.5);
 
     GameAudio.playSFX('scan');
 
     if (state.scannedItems.length === state.currentRound.items.length) {
+        state.scene.clearHighlights(); // All items scanned — stop pulsing
         setTimeout(() => triggerPaymentPhase(), 700);
     }
 }
 
 function triggerPaymentPhase() {
+    const lvl = getLevelConfig();
     ui.paymentSection.classList.remove('hidden');
+
+    // Show total in payment section so player doesn't need to look back
+    const totalEcho = $('payment-total-echo');
+    if (totalEcho) totalEcho.textContent = formatMoney(state.currentRound.total);
+
     ui.paymentDisplay.textContent = formatMoney(state.currentRound.payment);
-    ui.changeDueDisplay.textContent = formatMoney(state.currentRound.changeDue);
+
+    // Show or hide change-due based on level config
+    if (lvl.showChange) {
+        ui.changeDueDisplay.textContent = formatMoney(state.currentRound.changeDue);
+        ui.changeDueDisplay.style.opacity = '1';
+    } else {
+        ui.changeDueDisplay.textContent = '???';
+        ui.changeDueDisplay.style.opacity = '0.5';
+    }
+
+    // Show hint if upgrade owned (even when change is hidden)
+    if (state.shop.hasHintHelper()) {
+        ui.hintDisplay.style.display = 'block';
+        ui.hintAmount.textContent = formatMoney(state.currentRound.changeDue);
+        setTimeout(() => { ui.hintDisplay.style.display = 'none'; }, 3000);
+    }
+
     renderCashDrawer();
 }
 
 function renderCashDrawer() {
+    const lvl = getLevelConfig();
     ui.cashDrawer.innerHTML = '';
 
-    const maxChange = state.currentRound.changeDue;
-    const denoms = DENOMINATIONS.filter(d => d.value <= Math.max(maxChange + 5, 1));
+    // Determine which denomination values are allowed at this level.
+    // moneyOptions lists the bill values (e.g. [1, 5, 10]). We show coins
+    // always at lower tiers (levels 1-6) but restrict bills to the allowed set.
+    const allowedBills = new Set((lvl.moneyOptions || []).map(v => v));
+    const showCoins = state.currentLevel <= 9; // Coins relevant through Junior/Cashier tier
 
-    denoms.forEach(denom => {
+    const filteredDenoms = DENOMINATIONS.filter(d => {
+        if (d.type === 'coin') return showCoins;
+        return allowedBills.has(d.value);
+    });
+
+    filteredDenoms.forEach(denom => {
         const btn = document.createElement('button');
         btn.className = 'money-btn';
-        btn.innerHTML = `
-            <span class="money-emoji">${denom.emoji}</span>
-            ${denom.label}
-        `;
+        btn.innerHTML = `<span class="money-emoji">${denom.emoji}</span>${denom.label}`;
         btn.addEventListener('click', () => {
             if (state.roundLocked) return;
             addChange(denom.value);
-            if (denom.type === 'coin') {
-                GameAudio.playSFX('coinClink');
-            } else {
-                GameAudio.playSFX('billRustle');
-            }
+            GameAudio.playSFX(denom.type === 'coin' ? 'coinClink' : 'billRustle');
             btn.classList.add('selected');
             setTimeout(() => btn.classList.remove('selected'), 200);
         });
@@ -633,13 +906,9 @@ function addChange(value) {
     ui.changeGivenDisplay.textContent = formatMoney(state.changeGivenTotal);
 
     const expected = state.currentRound.changeDue;
-    if (Math.abs(state.changeGivenTotal - expected) < 0.001) {
-        ui.changeGivenDisplay.style.color = '#06d6a0';
-    } else if (state.changeGivenTotal > expected) {
-        ui.changeGivenDisplay.style.color = '#ef476f';
-    } else {
-        ui.changeGivenDisplay.style.color = '#ff6b35';
-    }
+    if (Math.abs(state.changeGivenTotal - expected) < 0.001) ui.changeGivenDisplay.style.color = '#06d6a0';
+    else if (state.changeGivenTotal > expected) ui.changeGivenDisplay.style.color = '#ef476f';
+    else ui.changeGivenDisplay.style.color = '#ff6b35';
 }
 
 function clearChange() {
@@ -652,32 +921,93 @@ function clearChange() {
 }
 
 function updateHUD() {
-    const config = DIFFICULTY[state.difficulty];
+    const lvl = getLevelConfig();
     ui.scoreDisplay.textContent = state.score;
     ui.streakDisplay.textContent = `${state.streak} 🔥`;
-    ui.customersDisplay.textContent = `${state.roundIndex} / ${config.roundsPerGame}`;
+    ui.customersDisplay.textContent = `${state.roundIndex} / ${lvl.customers}`;
+    if (ui.hudRank) ui.hudRank.textContent = lvl.name;
+
+    // Draw strikes
+    const strikesEl = $('hud-strikes');
+    if (strikesEl) {
+        let strikeText = '';
+        for (let i = 0; i < 3; i++) strikeText += i < state.strikes ? '❌ ' : '⭕ ';
+        strikesEl.textContent = strikeText;
+    }
 }
 
-function showFeedback(correct, message) {
+function showFeedback(correct, message, coins) {
     ui.feedbackToast.className = `feedback-toast ${correct ? 'correct' : 'incorrect'}`;
     ui.toastIcon.textContent = correct ? '✓' : '✗';
     ui.toastMessage.textContent = message;
+
+    if (coins > 0) {
+        ui.toastCoins.textContent = `+${coins} 🪙`;
+        ui.toastCoins.style.display = 'inline';
+    } else {
+        ui.toastCoins.style.display = 'none';
+    }
 
     ui.feedbackToast.style.animation = 'none';
     ui.feedbackToast.offsetHeight;
     ui.feedbackToast.style.animation = '';
 
+    setTimeout(() => { ui.feedbackToast.className = 'feedback-toast hidden'; }, 1200);
+}
+
+function showCoinsPopup(amount) {
+    if (amount <= 0) return;
+    ui.coinsPopup.textContent = `+${amount} 🪙`;
+    ui.coinsPopup.style.display = 'block';
+    ui.coinsPopup.style.animation = 'none';
+    ui.coinsPopup.offsetHeight;
+    ui.coinsPopup.style.animation = '';
+    setTimeout(() => { ui.coinsPopup.style.display = 'none'; }, 1200);
+}
+
+// ===== SCAN PROMPT =====
+function showScanPrompt() {
+    let prompt = $('scan-prompt');
+    if (!prompt) {
+        prompt = document.createElement('div');
+        prompt.id = 'scan-prompt';
+        prompt.className = 'scan-prompt';
+        prompt.innerHTML = '<span class="scan-prompt-icon">👆</span> Click items on the counter to scan them!';
+        $('gameplay-screen').appendChild(prompt);
+    }
+    prompt.classList.add('visible');
+    // Auto-dismiss after 5 seconds in case they don't interact
+    clearTimeout(state._scanPromptTimeout);
+    state._scanPromptTimeout = setTimeout(hideScanPrompt, 5000);
+}
+
+function hideScanPrompt() {
+    const prompt = $('scan-prompt');
+    if (prompt) prompt.classList.remove('visible');
+}
+
+// ===== JUICE: Floating Text =====
+function spawnFloatingText(text, x, y, color = '#06d6a0') {
+    const container = $('floating-text-container');
+    if (!container) return;
+
+    const el = document.createElement('div');
+    el.className = 'floating-text';
+    el.textContent = text;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.color = color;
+
+    container.appendChild(el);
+
+    // Clean up after animation ends
     setTimeout(() => {
-        ui.feedbackToast.className = 'feedback-toast hidden';
+        if (el && el.parentNode) el.parentNode.removeChild(el);
     }, 1200);
 }
 
 // ===== UTILITIES =====
-
-function formatMoney(amount) {
-    return '$' + amount.toFixed(2);
-}
-
+function formatMoney(amount) { return '$' + amount.toFixed(2); }
 function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
