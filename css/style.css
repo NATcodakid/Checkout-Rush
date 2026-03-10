@@ -406,6 +406,15 @@ body {
     background: var(--glass-border);
 }
 
+.btn-large {
+    padding: 16px 42px;
+    font-size: 1.25rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .btn-google {
     display: flex;
     align-items: center;
@@ -1529,20 +1538,24 @@ body {
 
 .landing-title {
     font-family: var(--font-display);
-    font-size: clamp(3.5rem, 9vw, 6.5rem);
+    font-size: clamp(3.8rem, 9vw, 7rem);
     font-weight: 700;
-    line-height: 1.0;
+    line-height: 1.05;
     color: #fff;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     letter-spacing: -0.02em;
-    text-shadow: 0 4px 40px rgba(0, 0, 0, 0.4);
-}
-
-.landing-title-rush {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background: linear-gradient(180deg, #ffffff 0%, #c8d2ff 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.landing-title-rush {
+    background: linear-gradient(135deg, #ff6b35 0%, #ffd166 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(255, 107, 53, 0.4));
 }
 
 .landing-tagline {
@@ -1567,22 +1580,27 @@ body {
 /* ----- Feature cards ----- */
 .landing-features {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
     margin: 16px 0 72px;
 }
 
 .landing-feature-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-lg);
-    padding: 28px 22px;
-    transition: transform 0.2s, border-color 0.2s;
+    padding: 40px 32px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease, border-color 0.3s;
 }
 
 .landing-feature-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(255, 107, 53, 0.2);
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 107, 53, 0.4);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .lf-icon {
