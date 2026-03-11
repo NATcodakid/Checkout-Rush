@@ -409,52 +409,52 @@ export class CheckoutScene {
         posterInner.position.set(-2, 2.0, -4.34);
         this.scene.add(posterInner);
 
-        // Wall clock
+        // Wall clock (moved up and centered above shelves)
         const clockFace = new THREE.Mesh(
             new THREE.CircleGeometry(0.2, 20),
             new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide })
         );
-        clockFace.position.set(2.5, 2.5, -4.34);
+        clockFace.position.set(0, 3.2, -4.34);
         this.scene.add(clockFace);
         const clockBorder = new THREE.Mesh(
             new THREE.TorusGeometry(0.2, 0.015, 8, 24),
             new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.4 })
         );
-        clockBorder.position.set(2.5, 2.5, -4.33);
+        clockBorder.position.set(0, 3.2, -4.33);
         this.scene.add(clockBorder);
         const clockHand1 = new THREE.Mesh(
             new THREE.BoxGeometry(0.01, 0.14, 0.005),
             new THREE.MeshBasicMaterial({ color: 0x111111 })
         );
-        clockHand1.position.set(2.5, 2.57, -4.32);
+        clockHand1.position.set(0, 3.27, -4.32);
         this.scene.add(clockHand1);
         const clockHand2 = new THREE.Mesh(
             new THREE.BoxGeometry(0.008, 0.1, 0.005),
             new THREE.MeshBasicMaterial({ color: 0x111111 })
         );
-        clockHand2.position.set(2.54, 2.5, -4.32);
+        clockHand2.position.set(0.04, 3.2, -4.32);
         clockHand2.rotation.z = Math.PI / 2;
         this.scene.add(clockHand2);
 
-        // Small potted plant on floor
+        // Small potted plant on floor (moved to right corner to avoid shelves)
         const pot = new THREE.Mesh(
             new THREE.CylinderGeometry(0.12, 0.1, 0.2, 8),
             new THREE.MeshStandardMaterial({ color: 0xb5651d, roughness: 0.8 })
         );
-        pot.position.set(-3, 0.1, -3.5);
+        pot.position.set(3.8, 0.1, -3.5);
         this.scene.add(pot);
         const soil = new THREE.Mesh(
             new THREE.CircleGeometry(0.11, 8),
             new THREE.MeshStandardMaterial({ color: 0x3e2723 })
         );
         soil.rotation.x = -Math.PI / 2;
-        soil.position.set(-3, 0.2, -3.5);
+        soil.position.set(3.8, 0.2, -3.5);
         this.scene.add(soil);
         const plant = new THREE.Mesh(
             new THREE.SphereGeometry(0.2, 8, 6),
             new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.7 })
         );
-        plant.position.set(-3, 0.4, -3.5);
+        plant.position.set(3.8, 0.4, -3.5);
         this.scene.add(plant);
 
         // Ceiling (subtle)
