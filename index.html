@@ -7,155 +7,298 @@
     <meta name="description"
         content="Checkout Rush — a fun 3D checkout game that helps kids ages 7-9 build number sense, addition, and making-change skills.">
     <title>Checkout Rush — Learn Math by Making Change!</title>
-    <link rel="icon" type="image/png" href="Assets/Images /Favicon.png">
+    <link rel="icon" type="image/png" href="Assets/Images/Favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+    <!-- Inline SVG icon definitions -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <symbol id="icon-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+        <symbol id="icon-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="16" x2="15" y2="16"/>
+        </symbol>
+        <symbol id="icon-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+        </symbol>
+        <symbol id="icon-hand-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/>
+            <path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/>
+            <path d="M2 16h3"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/>
+        </symbol>
+        <symbol id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+            <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </symbol>
+        <symbol id="icon-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+            <path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
+        </symbol>
+        <symbol id="icon-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+        </symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </symbol>
+        <symbol id="icon-star-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </symbol>
+        <symbol id="icon-coin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8"/><path d="M14.31 8l5.74 9.94"/><path d="M9.69 8h11.48"/><path d="M7.38 12l5.74-9.94"/><path d="M9.69 16L3.95 6.06"/><path d="M14.31 16H2.83"/><path d="M16.62 12l-5.74 9.94"/>
+        </symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </symbol>
+        <symbol id="icon-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </symbol>
+        <symbol id="icon-volume-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+        </symbol>
+        <symbol id="icon-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+        </symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </symbol>
+        <symbol id="icon-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+        </symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+        </symbol>
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </symbol>
+        <symbol id="icon-log-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </symbol>
+    </svg>
+
     <!-- ===== LANDING SCREEN ===== -->
     <div id="landing-screen" class="screen active">
         <div class="landing-wrap">
             <nav class="landing-nav">
                 <div class="landing-nav-logo">
-                    <span class="logo-emoji">🛒</span> Checkout<span class="title-rush">Rush</span>
+                    <svg class="icon icon-logo"><use href="#icon-cart"/></svg>
+                    <span>Checkout<span class="logo-rush">Rush</span></span>
                 </div>
                 <div class="landing-nav-actions">
-                    <button id="btn-landing-signin" class="btn btn-secondary">Sign In</button>
-                    <button id="btn-landing-signup" class="btn btn-primary">Sign Up</button>
+                    <button id="btn-landing-signin" class="nav-link">Sign In</button>
+                    <button id="btn-landing-signup" class="btn btn-primary btn-nav">Get Started</button>
                 </div>
             </nav>
 
             <header class="landing-hero">
-                <div class="landing-hero-badge">🎓 Educational Game for Kids 7-9</div>
-                <h1 class="landing-title">Master Math by Making <span class="landing-title-rush">Change!</span></h1>
-                <p class="landing-tagline">
-                    Welcome to <strong>Checkout Rush</strong>! Step behind the register, scan fun 3D groceries, and
-                    calculate correct change. Keep your streak alive, earn coins, and learn practical money math.
-                </p>
-                <div class="landing-hero-btns">
-                    <button id="btn-landing-play" class="btn btn-primary btn-large">Create Free Account</button>
-                    <button id="btn-landing-guest" class="btn btn-secondary btn-large">Play Without Account →</button>
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <div class="landing-hero-badge">
+                            <span class="badge-dot"></span>
+                            Educational Game for Ages 7-9
+                        </div>
+                        <h1 class="landing-title">Learn Math by<br>Making <span class="landing-title-rush">Change</span></h1>
+                        <p class="landing-tagline">
+                            Step behind the register, scan 3D groceries, and calculate
+                            correct change. Build real money skills while having fun.
+                        </p>
+                        <div class="landing-hero-btns">
+                            <button id="btn-landing-play" class="btn btn-primary btn-large">
+                                <svg class="icon icon-sm"><use href="#icon-play"/></svg> Start Playing Free
+                            </button>
+                            <button id="btn-landing-guest" class="btn btn-ghost btn-large">Try as Guest</button>
+                        </div>
+                        <div class="hero-social-proof">
+                            <div class="proof-avatars">
+                                <span class="proof-av"><svg class="icon icon-xs"><use href="#icon-user"/></svg></span>
+                                <span class="proof-av"><svg class="icon icon-xs"><use href="#icon-user"/></svg></span>
+                                <span class="proof-av"><svg class="icon icon-xs"><use href="#icon-user"/></svg></span>
+                            </div>
+                            <span class="proof-text">Loved by kids &amp; teachers</span>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="hero-card-stack">
+                            <div class="hero-float-card hfc-1">
+                                <img src="https://cdn.jsdelivr.net/gh/nickvdyck/fruit-icons/dist/apple.svg" alt="Apple" class="hfc-img" onerror="this.style.display='none'">
+                                <span class="hfc-price">$1.29</span>
+                            </div>
+                            <div class="hero-float-card hfc-2">
+                                <img src="https://cdn.jsdelivr.net/gh/nickvdyck/fruit-icons/dist/grapes.svg" alt="Grapes" class="hfc-img" onerror="this.style.display='none'">
+                                <span class="hfc-price">$2.79</span>
+                            </div>
+                            <div class="hero-float-card hfc-3">
+                                <img src="https://cdn.jsdelivr.net/gh/nickvdyck/fruit-icons/dist/banana.svg" alt="Banana" class="hfc-img" onerror="this.style.display='none'">
+                                <span class="hfc-price">$2.49</span>
+                            </div>
+                            <div class="hero-register">
+                                <div class="register-screen-mock">
+                                    <span class="register-total">$6.57</span>
+                                    <span class="register-label">TOTAL</span>
+                                </div>
+                                <div class="register-body-mock"></div>
+                            </div>
+                            <div class="hero-coins-float">
+                                <svg class="icon icon-coin-float"><use href="#icon-coin"/></svg>
+                                <svg class="icon icon-coin-float"><use href="#icon-coin"/></svg>
+                                <svg class="icon icon-coin-float"><use href="#icon-coin"/></svg>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <section class="landing-how">
-                <h2 class="landing-section-title">How It Works</h2>
-                <div class="landing-steps">
-                    <div class="landing-step">
-                        <div class="step-icon">💻</div>
-                        <h3>1. Scan Items</h3>
-                        <p>Click the 3D groceries on the belt to scan them through the register.</p>
+            <section class="landing-steps-section">
+                <h2 class="section-heading">How It Works</h2>
+                <p class="section-sub">Three simple steps to sharpen your math skills</p>
+                <div class="landing-steps-grid">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <div class="step-card-icon"><svg class="icon icon-lg"><use href="#icon-scan"/></svg></div>
+                        <h3>Scan Items</h3>
+                        <p>Click 3D groceries on the belt to ring them up through the register.</p>
                     </div>
-                    <div class="landing-step">
-                        <div class="step-icon">💵</div>
-                        <h3>2. Collect Cash</h3>
-                        <p>Observe the customer's payment and how much the total cost is.</p>
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <div class="step-card-icon"><svg class="icon icon-lg"><use href="#icon-wallet"/></svg></div>
+                        <h3>Take Payment</h3>
+                        <p>See what the customer pays and calculate how much change they need.</p>
                     </div>
-                    <div class="landing-step">
-                        <div class="step-icon">🧠</div>
-                        <h3>3. Make Change</h3>
-                        <p>Drag the exact coins and bills from your till to give the correct change before time runs
-                            out!
-                        </p>
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <div class="step-card-icon"><svg class="icon icon-lg"><use href="#icon-hand-coins"/></svg></div>
+                        <h3>Make Change</h3>
+                        <p>Select the right coins and bills to give back before time runs out!</p>
                     </div>
                 </div>
             </section>
 
-            <div class="landing-divider"></div>
-
             <section class="landing-features">
                 <div class="landing-feature-card">
-                    <h3>🛍️ 3D Supermarket</h3>
-                    <p>Enjoy a fully realized 3D checkout environment built with modern web graphics.</p>
+                    <div class="feature-icon-wrap"><svg class="icon"><use href="#icon-store"/></svg></div>
+                    <h3>3D Supermarket</h3>
+                    <p>A fully rendered checkout environment with real grocery items you can interact with.</p>
                 </div>
                 <div class="landing-feature-card">
-                    <h3>📈 Adaptive Difficulty</h3>
-                    <p>Start with simple dollar amounts and work your way up to complex change calculations.</p>
+                    <div class="feature-icon-wrap"><svg class="icon"><use href="#icon-trending"/></svg></div>
+                    <h3>20 Progressive Levels</h3>
+                    <p>Start simple and work up to complex change with cents, large bills, and tighter timers.</p>
                 </div>
                 <div class="landing-feature-card">
-                    <h3>🏆 Shop & Upgrades</h3>
-                    <p>Earn coins for correct answers to unlock new wallpapers and register upgrades.</p>
+                    <div class="feature-icon-wrap"><svg class="icon"><use href="#icon-trophy"/></svg></div>
+                    <h3>Earn &amp; Upgrade</h3>
+                    <p>Collect coins for correct answers and spend them on upgrades and store cosmetics.</p>
                 </div>
             </section>
 
             <div class="landing-cta-strip">
-                <h2 class="landing-cta-text">Ready to become the ultimate cashier?</h2>
-                <div class="landing-hero-btns" style="justify-content: center;">
-                    <button id="btn-landing-play2" class="btn btn-primary btn-large">Join Now!</button>
-                    <button id="btn-landing-guest2" class="btn btn-secondary btn-large">Try it as Guest</button>
+                <h2 class="cta-heading">Ready to become the ultimate cashier?</h2>
+                <div class="landing-hero-btns">
+                    <button id="btn-landing-play2" class="btn btn-primary btn-large">
+                        <svg class="icon icon-sm"><use href="#icon-play"/></svg> Start Playing Free
+                    </button>
+                    <button id="btn-landing-guest2" class="btn btn-ghost btn-large">Try as Guest</button>
                 </div>
             </div>
-        </div> <!-- End landing-wrap -->
+
+            <footer class="landing-footer">
+                <span class="landing-nav-logo" style="font-size:1.1rem;">
+                    <svg class="icon icon-sm"><use href="#icon-cart"/></svg>
+                    Checkout<span class="logo-rush">Rush</span>
+                </span>
+                <span class="footer-copy">Built for learning. Free to play.</span>
+            </footer>
+        </div>
     </div>
 
     <!-- ===== AUTH SCREEN ===== -->
     <div id="auth-screen" class="screen">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <h1 class="game-title">Checkout<span class="title-rush">Rush</span></h1>
-                <p class="title-subtitle">Can you make the right change?</p>
-            </div>
-
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="signin">Sign In</button>
-                <button class="auth-tab" data-tab="signup">Sign Up</button>
-            </div>
-
-            <form id="auth-form" autocomplete="on">
-                <div id="auth-name-field" class="auth-field" style="display:none;">
-                    <label for="auth-name">Display Name</label>
-                    <input type="text" id="auth-name" placeholder="Your name" autocomplete="name">
+        <div class="auth-screen-inner">
+            <div class="auth-side">
+                <div class="auth-side-content">
+                    <h2>Welcome to<br>Checkout<span class="logo-rush">Rush</span></h2>
+                    <p>Practice making change with fun 3D groceries. Level up your math skills!</p>
+                    <div class="auth-side-features">
+                        <div class="auth-side-feat"><svg class="icon icon-xs" style="color:var(--color-success)"><use href="#icon-check"/></svg> 20 progressive levels</div>
+                        <div class="auth-side-feat"><svg class="icon icon-xs" style="color:var(--color-success)"><use href="#icon-check"/></svg> Track your progress</div>
+                        <div class="auth-side-feat"><svg class="icon icon-xs" style="color:var(--color-success)"><use href="#icon-check"/></svg> Earn coins &amp; upgrades</div>
+                    </div>
                 </div>
-                <div class="auth-field">
-                    <label for="auth-email">Email</label>
-                    <input type="email" id="auth-email" placeholder="you@example.com" required autocomplete="email">
-                </div>
-                <div class="auth-field">
-                    <label for="auth-password">Password</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" required minlength="6"
-                        autocomplete="current-password">
-                </div>
-
-                <label class="tos-checkbox">
-                    <input type="checkbox" id="auth-tos">
-                    <span>I agree to the <a href="#" id="tos-link">Terms of Service</a></span>
-                </label>
-
-                <div id="auth-error" class="auth-error" style="display:none;"></div>
-
-                <button type="submit" id="btn-auth-submit" class="btn btn-primary auth-submit-btn">Sign In</button>
-            </form>
-
-            <div class="auth-divider"><span>or</span></div>
-
-            <button id="btn-google-signin" class="btn-google">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="#4285F4"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
-                    <path fill="#34A853"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                    <path fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
-                Sign in with Google
-            </button>
-
-            <div id="auth-loading" class="auth-loading" style="display:none;">
-                <div class="spinner"></div>
-                <span>Signing in…</span>
             </div>
-            <div class="auth-footer" style="margin-top:20px; text-align:center;">
-                <button id="btn-play-guest-auth" class="btn-text">Play as Guest instead</button>
-                <div style="margin-top:10px;">
-                    <button id="btn-auth-back" class="btn-text" style="color:var(--color-text-muted);">← Back to
-                        Home</button>
+            <div class="auth-card">
+                <div class="auth-card-inner">
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="signin">Sign In</button>
+                        <button class="auth-tab" data-tab="signup">Sign Up</button>
+                    </div>
+
+                    <form id="auth-form" autocomplete="on">
+                        <div id="auth-name-field" class="auth-field" style="display:none;">
+                            <label for="auth-name">Display Name</label>
+                            <input type="text" id="auth-name" placeholder="Your name" autocomplete="name">
+                        </div>
+                        <div class="auth-field">
+                            <label for="auth-email">Email</label>
+                            <input type="email" id="auth-email" placeholder="you@example.com" required autocomplete="email">
+                        </div>
+                        <div class="auth-field">
+                            <label for="auth-password">Password</label>
+                            <input type="password" id="auth-password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+                        </div>
+
+                        <label class="tos-checkbox">
+                            <input type="checkbox" id="auth-tos">
+                            <span>I agree to the <a href="javascript:void(0)" id="tos-link">Terms of Service</a></span>
+                        </label>
+
+                        <div id="auth-error" class="auth-error" style="display:none;"></div>
+
+                        <button type="submit" id="btn-auth-submit" class="btn btn-primary auth-submit-btn">Sign In</button>
+                    </form>
+
+                    <div class="auth-divider"><span>or</span></div>
+
+                    <button id="btn-google-signin" class="btn-google">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+
+                    <div id="auth-loading" class="auth-loading" style="display:none;">
+                        <div class="spinner"></div>
+                        <span>Signing in...</span>
+                    </div>
+                    <div class="auth-footer">
+                        <button id="btn-play-guest-auth" class="btn-text">Play as Guest instead</button>
+                        <button id="btn-auth-back" class="btn-text"><svg class="icon icon-xs"><use href="#icon-arrow-left"/></svg> Back to Home</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -166,26 +309,16 @@
         <div class="modal-card">
             <h2>Terms of Service</h2>
             <div class="tos-content">
-                <p><strong>Checkout Rush — Terms of Service</strong></p>
+                <p><strong>Checkout Rush -- Terms of Service</strong></p>
                 <p>Last updated: March 2026</p>
-                <h3>1. Acceptance</h3>
-                <p>By creating an account and using Checkout Rush, you agree to these terms.</p>
-                <h3>2. Account</h3>
-                <p>You are responsible for keeping your login credentials secure. You must be at least 13 years old to
-                    create an account, or have a parent/guardian's permission.</p>
-                <h3>3. Data Collection</h3>
-                <p>We collect your email, display name, and gameplay data (scores, accuracy, streaks) to provide game
-                    progress tracking. We do not sell your data to third parties.</p>
-                <h3>4. Acceptable Use</h3>
-                <p>Use the game for personal, educational purposes only. Do not attempt to exploit, hack, or abuse the
-                    service.</p>
-                <h3>5. Privacy</h3>
-                <p>Your gameplay data is stored securely via Google Firebase. You can request deletion of your data at
-                    any time by contacting us.</p>
-                <h3>6. Changes</h3>
-                <p>We may update these terms. Continued use after changes constitutes acceptance.</p>
+                <h3>1. Acceptance</h3><p>By creating an account and using Checkout Rush, you agree to these terms.</p>
+                <h3>2. Account</h3><p>You are responsible for keeping your login credentials secure. You must be at least 13 years old to create an account, or have a parent/guardian's permission.</p>
+                <h3>3. Data Collection</h3><p>We collect your email, display name, and gameplay data (scores, accuracy, streaks) to provide game progress tracking. We do not sell your data to third parties.</p>
+                <h3>4. Acceptable Use</h3><p>Use the game for personal, educational purposes only. Do not attempt to exploit, hack, or abuse the service.</p>
+                <h3>5. Privacy</h3><p>Your gameplay data is stored securely via Google Firebase. You can request deletion of your data at any time by contacting us.</p>
+                <h3>6. Changes</h3><p>We may update these terms. Continued use after changes constitutes acceptance.</p>
             </div>
-            <button id="tos-close" class="btn btn-primary">Got it</button>
+            <button id="tos-close" class="btn btn-primary" style="margin-top:var(--space-md);">Got it</button>
         </div>
     </div>
 
@@ -193,8 +326,7 @@
     <div id="title-screen" class="screen">
         <div class="title-progress-bar" id="title-progress" style="display:none;">
             <div class="title-progress-header">
-                <span class="title-level-indicator">Level <span id="title-level">1</span>: <span
-                        id="title-rank">Trainee</span></span>
+                <span class="title-level-indicator">Level <span id="title-level">1</span>: <span id="title-rank">Trainee</span></span>
                 <span class="title-coins">🪙 <span id="title-coins">0</span></span>
             </div>
             <div class="title-level-track">
@@ -207,27 +339,24 @@
                 <p class="title-subtitle">Can you make the right change?</p>
             </div>
             <div id="user-badge" class="user-badge" style="display:none;">
-                <span id="user-avatar" class="user-avatar">👤</span>
+                <svg class="icon icon-xs"><use href="#icon-user"/></svg>
                 <span id="user-name">Player</span>
-                <button id="btn-sign-out" class="btn-sign-out" title="Sign Out">↩ Sign Out</button>
+                <button id="btn-sign-out" class="btn-sign-out" title="Sign Out"><svg class="icon icon-xs"><use href="#icon-log-out"/></svg> Sign Out</button>
             </div>
             <div id="guest-badge" class="user-badge guest-badge" style="display:none;">
-                <span class="user-avatar">👤</span>
+                <svg class="icon icon-xs"><use href="#icon-user"/></svg>
                 <span id="guest-name">Guest</span>
-                <button id="btn-create-account-title" class="btn-sign-out" title="Save Progress">💾 Sign Up</button>
+                <button id="btn-create-account-title" class="btn-sign-out" title="Save Progress"><svg class="icon icon-xs"><use href="#icon-save"/></svg> Sign Up</button>
             </div>
             <div class="title-buttons">
-                <button id="btn-play" class="btn btn-primary pulse-btn">▶ Play</button>
-                <button id="btn-how-to-play" class="btn btn-secondary">? How to Play</button>
-                <div class="difficulty-select">
-                    <label>Difficulty:</label>
-                    <button class="diff-btn active" data-difficulty="easy">Easy</button>
-                    <button class="diff-btn" data-difficulty="medium">Medium</button>
-                    <button class="diff-btn" data-difficulty="hard">Hard</button>
+                <button id="btn-play" class="btn btn-primary pulse-btn"><svg class="icon icon-sm"><use href="#icon-play"/></svg> Play Level <span id="btn-play-level">1</span></button>
+                <div class="title-btn-row">
+                    <button id="btn-shop" class="btn btn-secondary"><svg class="icon icon-xs"><use href="#icon-cart"/></svg> Shop</button>
+                    <button id="btn-how-to-play" class="btn btn-secondary"><svg class="icon icon-xs"><use href="#icon-help"/></svg> How to Play</button>
                 </div>
             </div>
             <div class="title-stats" id="title-stats" style="display:none;">
-                <p>🏆 Best Streak: <span id="best-streak-display">0</span></p>
+                <p><svg class="icon icon-xs" style="color:var(--color-coin)"><use href="#icon-trophy"/></svg> Best Streak: <span id="best-streak-display">0</span></p>
             </div>
         </div>
     </div>
@@ -238,22 +367,22 @@
             <h2>How to Play</h2>
             <div class="tutorial-steps">
                 <div class="tutorial-step">
-                    <div class="step-icon">🛒</div>
+                    <div class="step-icon"><svg class="icon icon-lg"><use href="#icon-scan"/></svg></div>
                     <h3>1. Scan Items</h3>
-                    <p>Items appear on the counter. Look at each price and find the total.</p>
+                    <p>Items appear on the counter. Click each one to scan it.</p>
                 </div>
                 <div class="tutorial-step">
-                    <div class="step-icon">💵</div>
+                    <div class="step-icon"><svg class="icon icon-lg"><use href="#icon-wallet"/></svg></div>
                     <h3>2. Customer Pays</h3>
                     <p>The customer gives you money. Figure out how much change to give back.</p>
                 </div>
                 <div class="tutorial-step">
-                    <div class="step-icon">🪙</div>
+                    <div class="step-icon"><svg class="icon icon-lg"><use href="#icon-hand-coins"/></svg></div>
                     <h3>3. Make Change</h3>
                     <p>Click the right coins and bills to return the correct change!</p>
                 </div>
                 <div class="tutorial-step">
-                    <div class="step-icon">⭐</div>
+                    <div class="step-icon"><svg class="icon icon-lg"><use href="#icon-star"/></svg></div>
                     <h3>4. Keep Going!</h3>
                     <p>Serve customers quickly and accurately to build your streak and earn stars!</p>
                 </div>
@@ -264,10 +393,8 @@
 
     <!-- ===== GAMEPLAY SCREEN ===== -->
     <div id="gameplay-screen" class="screen">
-        <!-- Three.js canvas is injected here -->
         <div id="three-container"></div>
 
-        <!-- HUD Overlay -->
         <div id="hud">
             <div class="hud-top">
                 <div class="hud-item" id="hud-score">
@@ -276,7 +403,7 @@
                 </div>
                 <div class="hud-item" id="hud-streak">
                     <span class="hud-label">Streak</span>
-                    <span class="hud-value" id="streak-display">0 🔥</span>
+                    <span class="hud-value" id="streak-display">0</span>
                 </div>
                 <div class="hud-item" id="hud-customers">
                     <span class="hud-label">Customers</span>
@@ -288,16 +415,17 @@
                 </div>
                 <div class="hud-item" id="hud-strikes-container">
                     <span class="hud-label">Strikes</span>
-                    <span class="hud-value" id="hud-strikes">⭕ ⭕ ⭕</span>
+                    <span class="hud-value" id="hud-strikes"></span>
                 </div>
-                <button id="sound-toggle" class="sound-toggle" title="Toggle sound">🔊</button>
+                <button id="sound-toggle" class="sound-toggle" title="Toggle sound">
+                    <svg class="icon icon-sm" id="sound-icon"><use href="#icon-volume"/></svg>
+                </button>
                 <div id="hud-user" class="hud-user" style="display:none;"><span id="hud-username">Player</span></div>
             </div>
         </div>
 
-        <!-- Receipt Panel (top-left) -->
         <div class="floating-receipt" id="items-section">
-            <h3>🛒 Receipt</h3>
+            <h3><svg class="icon icon-xs"><use href="#icon-receipt"/></svg> Receipt</h3>
             <div id="items-list"></div>
             <div class="total-row">
                 <span>Total:</span>
@@ -305,9 +433,8 @@
             </div>
         </div>
 
-        <!-- Payment Panel (bottom-right, hidden until items scanned) -->
         <div class="floating-payment hidden" id="payment-section">
-            <h3>💵 Customer Pays</h3>
+            <h3><svg class="icon icon-xs"><use href="#icon-wallet"/></svg> Customer Pays</h3>
             <div id="payment-display" class="payment-amount">$0.00</div>
             <div class="change-row">
                 <span>Change Due:</span>
@@ -319,16 +446,34 @@
                 <span>You're giving:</span>
                 <strong id="change-given-display">$0.00</strong>
             </div>
+            <div id="hint-display" class="hint-display" style="display:none;">
+                <span>Hint: </span><strong id="hint-amount"></strong>
+            </div>
             <div class="change-buttons">
-                <button id="btn-submit-change" class="btn btn-success">✓ Give Change</button>
-                <button id="btn-clear-change" class="btn btn-warning">↺ Clear</button>
+                <button id="btn-submit-change" class="btn btn-success"><svg class="icon icon-xs"><use href="#icon-check"/></svg> Give Change</button>
+                <button id="btn-clear-change" class="btn btn-warning">Clear</button>
+                <button id="btn-buy-hint" class="btn btn-secondary" title="Cost: 5 Coins"><svg class="icon icon-xs"><use href="#icon-sparkles"/></svg> Hint (5🪙)</button>
             </div>
         </div>
 
-        <!-- Feedback Toast -->
         <div id="feedback-toast" class="feedback-toast hidden">
-            <div class="toast-icon" id="toast-icon">✓</div>
+            <div class="toast-icon" id="toast-icon"><svg class="icon icon-sm"><use href="#icon-check"/></svg></div>
             <div class="toast-message" id="toast-message">Correct!</div>
+            <span id="toast-coins" class="toast-coins"></span>
+        </div>
+
+        <div id="coins-popup" class="coins-popup" style="display:none;"></div>
+    </div>
+
+    <!-- ===== SHOP SCREEN ===== -->
+    <div id="shop-screen" class="screen">
+        <div class="shop-content">
+            <div class="shop-header">
+                <h2><svg class="icon" style="color:var(--color-primary)"><use href="#icon-cart"/></svg> Shop</h2>
+                <div class="shop-coins">🪙 <span id="shop-coins-display">0</span></div>
+            </div>
+            <div id="shop-grid" class="shop-grid"></div>
+            <button id="btn-shop-close" class="btn btn-secondary" style="margin-top:var(--space-md);"><svg class="icon icon-xs"><use href="#icon-arrow-left"/></svg> Back</button>
         </div>
     </div>
 
@@ -336,46 +481,42 @@
     <div id="results-screen" class="screen">
         <div class="results-content">
             <h2 id="results-title">Round Complete!</h2>
-            <div class="results-stars" id="results-stars">⭐⭐⭐</div>
+            <div class="results-stars" id="results-stars"></div>
+
+            <div class="results-coins-summary" id="results-coins-summary">
+                🪙 <span id="result-coins-earned">0</span> coins earned
+            </div>
+
+            <div class="results-level-up" id="results-level-up" style="display:none;">
+                <span class="level-up-badge"><svg class="icon icon-xs"><use href="#icon-sparkles"/></svg> Level Up!</span>
+                <span id="results-next-level"></span>
+            </div>
+
             <div class="results-grid">
-                <div class="result-item">
-                    <span class="result-label">Score</span>
-                    <span class="result-value" id="result-score">0</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Customers Served</span>
-                    <span class="result-value" id="result-customers">0</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Accuracy</span>
-                    <span class="result-value" id="result-accuracy">0%</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Best Streak</span>
-                    <span class="result-value" id="result-streak">0</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Time</span>
-                    <span class="result-value" id="result-time">0:00</span>
-                </div>
+                <div class="result-item"><span class="result-label">Score</span><span class="result-value" id="result-score">0</span></div>
+                <div class="result-item"><span class="result-label">Customers Served</span><span class="result-value" id="result-customers">0</span></div>
+                <div class="result-item"><span class="result-label">Accuracy</span><span class="result-value" id="result-accuracy">0%</span></div>
+                <div class="result-item"><span class="result-label">Best Streak</span><span class="result-value" id="result-streak">0</span></div>
+                <div class="result-item"><span class="result-label">Time</span><span class="result-value" id="result-time">0:00</span></div>
             </div>
             <div class="results-tips" id="results-tips"></div>
 
-            <div id="guest-results-cta" class="results-guest-cta"
-                style="display:none; text-align:center; margin:15px 0; padding:15px; border-radius:8px; background:rgba(255,255,255,0.1);">
-                <p style="margin:0 0 10px; font-weight:bold;">Great job! Want to save your progress?</p>
-                <button id="btn-create-account-results" class="btn btn-primary"
-                    style="font-size:0.9rem; padding:8px 16px;">Create Free Account</button>
+            <div id="guest-results-cta" class="results-guest-cta" style="display:none;">
+                <svg class="icon" style="color:var(--color-secondary)"><use href="#icon-save"/></svg>
+                <div>
+                    <strong>Save your progress!</strong>
+                    <p>Create a free account to keep your coins and level.</p>
+                    <button id="btn-create-account-results" class="btn btn-primary btn-sm" style="margin-top:8px;">Create Free Account</button>
+                </div>
             </div>
 
             <div class="results-buttons">
-                <button id="btn-play-again" class="btn btn-primary">▶ Play Again</button>
-                <button id="btn-back-to-menu" class="btn btn-secondary">🏠 Menu</button>
+                <button id="btn-play-again" class="btn btn-primary"><svg class="icon icon-sm"><use href="#icon-play"/></svg> Play Again</button>
+                <button id="btn-back-to-menu" class="btn btn-secondary"><svg class="icon icon-xs"><use href="#icon-home"/></svg> Menu</button>
             </div>
         </div>
     </div>
 
-    <!-- Container for dynamic floating text elements -->
     <div id="floating-text-container"></div>
 
     <script type="importmap">

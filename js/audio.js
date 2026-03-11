@@ -9,13 +9,13 @@
  */
 
 const SFX_PATHS = {
-    scan: 'Assets/Sound Effects/scan.wav',
-    correct: 'Assets/Sound Effects/correct.wav',
-    incorrect: 'Assets/Sound Effects/incorrect.wav',
-    coinClink: 'Assets/Sound Effects/coin-clink.wav',
-    billRustle: 'Assets/Sound Effects/bill-rustle.wav',
-    streak: 'Assets/Sound Effects/streak.wav',
-    roundEnd: 'Assets/Sound Effects/round-end.wav',
+    scan: 'Assets/SoundEffects/scan.wav',
+    correct: 'Assets/SoundEffects/correct.wav',
+    incorrect: 'Assets/SoundEffects/incorrect.wav',
+    coinClink: 'Assets/SoundEffects/coin-clink.wav',
+    billRustle: 'Assets/SoundEffects/bill-rustle.wav',
+    streak: 'Assets/SoundEffects/streak.wav',
+    roundEnd: 'Assets/SoundEffects/round-end.wav',
 };
 
 const MUSIC_PATHS = {
@@ -67,8 +67,8 @@ class AudioManager {
             }
         };
 
-        document.addEventListener('click', unlock, { once: false });
-        document.addEventListener('keydown', unlock, { once: false });
+        document.addEventListener('click', unlock, { once: true });
+        document.addEventListener('keydown', unlock, { once: true });
     }
 
     async _preloadSFX() {

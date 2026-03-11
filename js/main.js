@@ -106,12 +106,15 @@ function init() {
 
     // Game buttons
     $('btn-play').addEventListener('click', startGame);
-    $('btn-shop').addEventListener('click', () => { renderShop(); showScreen(state, 'shop'); GameAudio.playSFX('coinClink'); });
-    $('btn-shop-close').addEventListener('click', () => showScreen(state, 'title'));
+    const btnShop = $('btn-shop');
+    if (btnShop) btnShop.addEventListener('click', () => { renderShop(); showScreen(state, 'shop'); GameAudio.playSFX('coinClink'); });
+    const btnShopClose = $('btn-shop-close');
+    if (btnShopClose) btnShopClose.addEventListener('click', () => { updateTitleScreen(); showScreen(state, 'title'); });
     $('btn-how-to-play').addEventListener('click', () => { showScreen(state, 'tutorial'); GameAudio.playSFX('coinClink'); });
     $('btn-tutorial-close').addEventListener('click', () => showScreen(state, 'title'));
     $('btn-submit-change').addEventListener('click', submitChange);
     $('btn-clear-change').addEventListener('click', clearChange);
+    $('btn-buy-hint').addEventListener('click', buyHint);
     $('btn-play-again').addEventListener('click', startGame);
     $('btn-back-to-menu').addEventListener('click', () => {
         GameAudio.stopMusic();
@@ -124,7 +127,11 @@ function init() {
     if (ui.soundToggle) {
         ui.soundToggle.addEventListener('click', () => {
             const muted = GameAudio.toggleMute();
-            ui.soundToggle.textContent = muted ? '🔇' : '🔊';
+            const iconEl = document.getElementById('sound-icon');
+            if (iconEl) {
+                const useEl = iconEl.querySelector('use');
+                if (useEl) useEl.setAttribute('href', muted ? '#icon-volume-off' : '#icon-volume');
+            }
         });
     }
 
@@ -281,12 +288,13 @@ function updateTitleScreen() {
     ui.titleLevel.textContent = state.currentLevel;
     ui.titleRank.textContent = lvl.name;
     ui.titleCoins.textContent = state.coins;
-    ui.btnPlayLevel.textContent = state.currentLevel;
+    if (ui.btnPlayLevel) ui.btnPlayLevel.textContent = state.currentLevel;
 
-    // XP bar: progress within current tier (approx)
+    // XP bar: progress within current tier
     const tierStart = state.currentLevel <= 3 ? 1 : state.currentLevel <= 6 ? 4 : state.currentLevel <= 10 ? 7 : state.currentLevel <= 14 ? 11 : state.currentLevel <= 18 ? 15 : 19;
     const tierEnd = state.currentLevel <= 3 ? 3 : state.currentLevel <= 6 ? 6 : state.currentLevel <= 10 ? 10 : state.currentLevel <= 14 ? 14 : state.currentLevel <= 18 ? 18 : 20;
-    const pct = ((state.currentLevel - tierStart) / (tierEnd - tierStart + 1)) * 100;
+    const tierSpan = tierEnd - tierStart;
+    const pct = tierSpan > 0 ? ((state.currentLevel - tierStart) / tierSpan) * 100 : 100;
     ui.titleLevelBar.style.width = `${Math.min(pct, 100)}%`;
 
     const localBest = Analytics.getBestStreak();
@@ -305,6 +313,7 @@ function getLevelConfig() {
 
 // ===== SHOP =====
 function renderShop() {
+    if (!ui.shopCoinsDisplay || !ui.shopGrid) return;
     ui.shopCoinsDisplay.textContent = state.coins;
     ui.shopGrid.innerHTML = '';
 
@@ -324,8 +333,8 @@ function renderShop() {
         let actionHTML = '';
         if (maxed || (owned > 0 && isWallpaper)) {
             const ownedLabel = upgrade.maxOwned > 1
-                ? `✓ Owned (${owned}/${upgrade.maxOwned})`
-                : `✓ Owned`;
+                ? `Owned (${owned}/${upgrade.maxOwned})`
+                : `Owned`;
             actionHTML = `<div class="shop-card-owned">${ownedLabel}</div>`;
             if (isWallpaper) {
                 actionHTML += isActiveWp
@@ -340,7 +349,7 @@ function renderShop() {
         }
 
         card.innerHTML = `
-            <div class="shop-card-icon">${upgrade.icon}</div>
+            <div class="shop-card-icon"><svg class="icon" style="width:2.5rem;height:2.5rem;color:var(--color-primary)"><use href="${upgrade.iconSvg || '#icon-star'}"/></svg></div>
             <div class="shop-card-name">${upgrade.name}</div>
             <div class="shop-card-desc">${upgrade.description}</div>
             <div class="shop-card-price">🪙 ${upgrade.cost}</div>
@@ -418,10 +427,9 @@ async function startGame() {
         await state.scene.waitForLoad();
     }
 
-    state.scene.setupQueue(Math.min(lvl.customers, 4));
-
-    // Set up patience on the 3D scene
+    // Set patience BEFORE setupQueue so the first customer gets a bar
     state.scene.setPatienceMax(lvl.patience || 0);
+    state.scene.setupQueue(Math.min(lvl.customers, 4));
 
     // Golden scanner cosmetic — re-apply every time (scene may be reused)
     if (state.shop.hasGoldenScanner() && state.scene.scanRing) {
@@ -449,8 +457,8 @@ async function startGame() {
     Analytics.startSession('level_' + state.currentLevel);
 
     showScreen(state, 'gameplay');
-    ui.hudLevel.textContent = state.currentLevel;
-    ui.hudCoins.textContent = state.coins;
+    if (ui.hudLevel) ui.hudLevel.textContent = state.currentLevel;
+    if (ui.hudCoins) ui.hudCoins.textContent = state.coins;
 
     clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
@@ -488,12 +496,12 @@ function nextRound() {
         showScanPrompt(state);
     }
 
-    // Start patience countdown
     clearInterval(state.patienceInterval);
     if (lvl.patience > 0) {
         const bonusTime = state.shop.getTimerBonus ? state.shop.getTimerBonus() : 0;
         state.patienceRemaining = lvl.patience + bonusTime;
         state.scene.setPatienceMax(state.patienceRemaining);
+        state.scene.ensurePatienceBar();
         state.scene.updatePatience(state.patienceRemaining);
 
         state.patienceInterval = setInterval(() => {
@@ -524,7 +532,7 @@ async function submitChange() {
     earnedCoins = Math.floor(earnedCoins * (1 + state.shop.getTipBonus()));
     state.coins += earnedCoins;
     state.coinsEarnedThisGame += earnedCoins;
-    ui.hudCoins.textContent = state.coins;
+    if (ui.hudCoins) ui.hudCoins.textContent = state.coins;
 
     Analytics.logRound({
         roundIndex: state.roundIndex,
@@ -547,12 +555,13 @@ async function submitChange() {
         if (state.streak >= 2) {
             if (state.streak >= 3) GameAudio.playSFX('streak');
             // JUICE: Float streak text
-            spawnFloatingText(`Streak x${state.streak}! 🔥`, window.innerWidth * 0.5, window.innerHeight * 0.4, '#ff6b35');
+            spawnFloatingText(`Streak x${state.streak}!`, window.innerWidth * 0.5, window.innerHeight * 0.4, '#ff6b35');
         }
 
-        showFeedback(true, 'Correct! 🎉', earnedCoins);
+        showFeedback(true, 'Correct!', earnedCoins);
         state.scene.flashRegister(true);
         state.scene.customerReact(true);
+        spawnFloatingText('✅', window.innerWidth * 0.5, window.innerHeight * 0.35);
     } else {
         state.streak = 0;
         state.incorrectCount++;
@@ -567,6 +576,7 @@ async function submitChange() {
         showFeedback(false, `Oops! ${hint}`, earnedCoins);
         state.scene.flashRegister(false);
         state.scene.customerReact(false);
+        spawnFloatingText('❌', window.innerWidth * 0.5, window.innerHeight * 0.35);
 
         // Strike logic & Juice
         state.strikes++;
@@ -659,36 +669,41 @@ async function endGame(isGameOver = false) {
     ui.resultAccuracy.textContent = `${accuracy}%`;
     ui.resultStreak.textContent = state.bestStreak;
     ui.resultTime.textContent = formatTime(state.elapsedSeconds);
-    ui.resultsStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
-    ui.resultCoinsEarned.textContent = state.coinsEarnedThisGame;
+    if (ui.resultsStars) {
+        let starsHTML = '';
+        for (let i = 0; i < stars; i++) starsHTML += '<svg class="icon results-star filled"><use href="#icon-star"/></svg>';
+        for (let i = stars; i < 3; i++) starsHTML += '<svg class="icon results-star empty"><use href="#icon-star-empty"/></svg>';
+        ui.resultsStars.innerHTML = starsHTML;
+    }
+    if (ui.resultCoinsEarned) ui.resultCoinsEarned.textContent = state.coinsEarnedThisGame;
 
     // Level up logic
     const canLevelUp = !isGameOver && accuracy >= 50 && state.currentLevel < LEVELS.length;
     if (isGameOver) {
-        ui.resultsLevelUp.style.display = 'none';
-        ui.resultsTitle.textContent = 'Game Over! 3 Strikes ❌';
-        $('btn-play-again').textContent = `↺ Retry Level ${state.currentLevel}`;
+        if (ui.resultsLevelUp) ui.resultsLevelUp.style.display = 'none';
+        ui.resultsTitle.textContent = 'Game Over! 3 Strikes';
+        $('btn-play-again').innerHTML = `<svg class="icon icon-sm"><use href="#icon-play"/></svg> Retry Level ${state.currentLevel}`;
     } else if (canLevelUp) {
         state.currentLevel++;
-        ui.resultsLevelUp.style.display = 'block';
-        ui.resultsNextLevel.textContent = `Level ${state.currentLevel} — ${getLevelConfig().name}`;
-        ui.resultsTitle.textContent = '🎉 Level Complete!';
-        $('btn-play-again').textContent = `▶ Play Level ${state.currentLevel}`;
+        if (ui.resultsLevelUp) ui.resultsLevelUp.style.display = 'block';
+        if (ui.resultsNextLevel) ui.resultsNextLevel.textContent = `Level ${state.currentLevel} — ${getLevelConfig().name}`;
+        ui.resultsTitle.textContent = 'Level Complete!';
+        $('btn-play-again').innerHTML = `<svg class="icon icon-sm"><use href="#icon-play"/></svg> Play Level ${state.currentLevel}`;
     } else if (accuracy < 50) {
-        ui.resultsLevelUp.style.display = 'none';
+        if (ui.resultsLevelUp) ui.resultsLevelUp.style.display = 'none';
         ui.resultsTitle.textContent = 'Keep Practicing! 💪';
-        $('btn-play-again').textContent = `↺ Retry Level ${state.currentLevel}`;
+        $('btn-play-again').innerHTML = `<svg class="icon icon-sm"><use href="#icon-play"/></svg> Retry Level ${state.currentLevel}`;
     } else {
-        ui.resultsLevelUp.style.display = 'none';
-        if (accuracy >= 85) ui.resultsTitle.textContent = '⭐ Amazing Work! ⭐';
+        if (ui.resultsLevelUp) ui.resultsLevelUp.style.display = 'none';
+        if (accuracy >= 85) ui.resultsTitle.textContent = 'Amazing Work!';
         else ui.resultsTitle.textContent = 'Great Job! 👏';
-        $('btn-play-again').textContent = `▶ Play Level ${state.currentLevel}`;
+        $('btn-play-again').innerHTML = `<svg class="icon icon-sm"><use href="#icon-play"/></svg> Play Level ${state.currentLevel}`;
     }
 
     const tips = [];
-    if (accuracy < 60) tips.push('💡 Try counting up from the total to the payment.');
-    if (state.bestStreak < 3) tips.push('💡 Take your time! Accuracy counts more than speed.');
-    if (state.coinsEarnedThisGame > 0) tips.push(`🪙 You earned ${state.coinsEarnedThisGame} coins! Check the shop.`);
+    if (accuracy < 60) tips.push('Tip: Try counting up from the total to the payment.');
+    if (state.bestStreak < 3) tips.push('Tip: Take your time! Accuracy counts more than speed.');
+    if (state.coinsEarnedThisGame > 0) tips.push(`You earned ${state.coinsEarnedThisGame} coins! Check the shop.`);
     ui.resultsTips.innerHTML = tips.join('<br>');
 
     // Save to Firestore (skip for guests)
@@ -750,7 +765,7 @@ function handleItemScanned(item, i) {
     const row = document.createElement('div');
     row.className = 'item-row';
     row.innerHTML = `
-        <span class="item-name"><span class="item-emoji">${item.emoji}</span>${item.name}</span>
+        <span class="item-name">${item.name}</span>
         <span class="item-price">${formatMoney(item.price)}</span>
     `;
     ui.itemsList.appendChild(row);
@@ -796,6 +811,12 @@ function triggerPaymentPhase() {
         setTimeout(() => { ui.hintDisplay.style.display = 'none'; }, 3000);
     }
 
+    if (state.currentLevel === 1) {
+        ui.cashDrawer.classList.add('drawer-pulse');
+    } else {
+        ui.cashDrawer.classList.remove('drawer-pulse');
+    }
+
     renderCashDrawer();
 }
 
@@ -803,14 +824,10 @@ function renderCashDrawer() {
     const lvl = getLevelConfig();
     ui.cashDrawer.innerHTML = '';
 
-    // Determine which denomination values are allowed at this level.
-    // moneyOptions lists the bill values (e.g. [1, 5, 10]). We show coins
-    // always at lower tiers (levels 1-6) but restrict bills to the allowed set.
     const allowedBills = new Set((lvl.moneyOptions || []).map(v => v));
-    const showCoins = state.currentLevel <= 9; // Coins relevant through Junior/Cashier tier
 
     const filteredDenoms = DENOMINATIONS.filter(d => {
-        if (d.type === 'coin') return showCoins;
+        if (d.type === 'coin') return true;
         return allowedBills.has(d.value);
     });
 
@@ -830,6 +847,7 @@ function renderCashDrawer() {
 }
 
 function addChange(value) {
+    ui.cashDrawer.classList.remove('drawer-pulse');
     state.changeGiven.push(value);
     state.changeGivenTotal = Math.round(state.changeGiven.reduce((s, v) => s + v, 0) * 100) / 100;
     ui.changeGivenDisplay.textContent = formatMoney(state.changeGivenTotal);
@@ -849,10 +867,63 @@ function clearChange() {
     GameAudio.playSFX('coinClink');
 }
 
+function buyHint() {
+    if (state.roundLocked) return;
+    if (state.coins < 5) {
+        showFeedback(false, 'Not enough coins (Need 5🪙)', 0);
+        return;
+    }
+    
+    // Deduct coins
+    state.coins -= 5;
+    if (ui.hudCoins) ui.hudCoins.textContent = state.coins;
+    GameAudio.playSFX('coinClink');
+    
+    const expected = state.currentRound.changeDue;
+    const remaining = Math.round((expected - state.changeGivenTotal) * 100) / 100;
+    
+    if (remaining <= 0) {
+        showFeedback(true, 'No more change needed!', 0);
+        return;
+    }
+    
+    const lvl = getLevelConfig();
+    const allowedBills = new Set((lvl.moneyOptions || []).map(v => v));
+    const filteredDenoms = DENOMINATIONS.filter(d => {
+        if (d.type === 'coin') return true;
+        return allowedBills.has(d.value);
+    });
+    
+    filteredDenoms.sort((a, b) => b.value - a.value);
+    
+    let bestDenom = null;
+    for (const d of filteredDenoms) {
+        if (d.value <= remaining + 0.001) {
+            bestDenom = d;
+            break;
+        }
+    }
+    
+    if (bestDenom) {
+        const buttons = ui.cashDrawer.querySelectorAll('.money-btn');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes(bestDenom.label)) {
+                btn.classList.add('hint-highlight');
+                setTimeout(() => btn.classList.remove('hint-highlight'), 1500);
+            }
+        });
+        showFeedback(true, `Hint: Try a ${bestDenom.label}`, 0);
+    } else {
+        showFeedback(true, 'Just submit it!', 0);
+    }
+}
+
 function updateHUD() {
     const lvl = getLevelConfig();
     ui.scoreDisplay.textContent = state.score;
-    ui.streakDisplay.textContent = `${state.streak} 🔥`;
+    if (ui.streakDisplay) {
+        ui.streakDisplay.innerHTML = `${state.streak} <svg class="icon icon-xs" style="color:var(--color-primary)"><use href="#icon-flame"/></svg>`;
+    }
     ui.customersDisplay.textContent = `${state.roundIndex} / ${lvl.customers}`;
     if (ui.hudRank) ui.hudRank.textContent = lvl.name;
 
@@ -860,8 +931,12 @@ function updateHUD() {
     const strikesEl = $('hud-strikes');
     if (strikesEl) {
         let strikeText = '';
-        for (let i = 0; i < 3; i++) strikeText += i < state.strikes ? '❌ ' : '⭕ ';
-        strikesEl.textContent = strikeText;
+        for (let i = 0; i < 3; i++) {
+            strikeText += i < state.strikes
+                ? '<svg class="icon icon-xs" style="color:var(--color-danger)"><use href="#icon-x"/></svg> '
+                : '<svg class="icon icon-xs" style="color:var(--color-text-muted);opacity:.4"><use href="#icon-x"/></svg> ';
+        }
+        strikesEl.innerHTML = strikeText;
     }
 }
 

@@ -57,13 +57,6 @@ export const LEVELS = [
     { level: 20, name: 'Master Cashier', itemCount: [5, 6], priceIndex: 2, maxTotal: 75, customers: 15, patience: 15, showChange: false, changeMax: 60, coinReward: 40, moneyOptions: [20, 50, 100] },
 ];
 
-// Legacy DIFFICULTY kept for compatibility
-export const DIFFICULTY = {
-    easy: { label: 'Easy', roundsPerGame: 5, itemCount: [1, 2], priceIndex: 0, maxTotal: 10, changeMax: 5, timerEnabled: false, hintLevel: 2 },
-    medium: { label: 'Medium', roundsPerGame: 7, itemCount: [2, 3], priceIndex: 1, maxTotal: 20, changeMax: 10, timerEnabled: true, timerSeconds: 30, hintLevel: 1 },
-    hard: { label: 'Hard', roundsPerGame: 10, itemCount: [3, 4], priceIndex: 2, maxTotal: 50, changeMax: 20, timerEnabled: true, timerSeconds: 20, hintLevel: 0 },
-};
-
 // ===== COIN ECONOMY =====
 export function calculateCoins(correct, streak, levelConfig) {
     const base = levelConfig.coinReward || 10;
@@ -124,11 +117,12 @@ export function generateRound(levelConfig) {
         runningTotal += roundItems[i].price;
     }
     if (roundItems.length > 0) {
-        roundItems[roundItems.length - 1].price = Math.round((total - runningTotal) * 100) / 100;
-        if (roundItems[roundItems.length - 1].price < 0.25) {
-            roundItems[roundItems.length - 1].price = 0.25;
-            total = Math.round(roundItems.reduce((sum, i) => sum + i.price, 0) * 100) / 100;
+        let lastPrice = Math.round((total - runningTotal) * 100) / 100;
+        if (lastPrice < 0.25) {
+            lastPrice = 0.25;
         }
+        roundItems[roundItems.length - 1].price = lastPrice;
+        total = Math.round(roundItems.reduce((sum, i) => sum + i.price, 0) * 100) / 100;
     }
 
     // Payment: pick from the level's allowed bill denominations
