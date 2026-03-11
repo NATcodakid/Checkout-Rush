@@ -1082,6 +1082,9 @@ export class CheckoutScene {
         if (!this.scanLight) return;
         this.scanLight.intensity = 2.0;
         setTimeout(() => { this.scanLight.intensity = 0; }, 250);
+
+        // JUICE: Scanner particles
+        this.spawnParticles(this.scannerGroup.position, 0x00ffcc, 12);
     }
 
     flashRegister(correct) {
@@ -1092,6 +1095,41 @@ export class CheckoutScene {
             this.registerScreen.material.emissive.setHex(0x33cc33);
             this.registerScreen.material.emissiveIntensity = 0.5;
         }, 500);
+
+        // JUICE: Register particles
+        const pos = new THREE.Vector3();
+        this.registerScreen.getWorldPosition(pos);
+        this.spawnParticles(pos, correct ? 0x00ff88 : 0xff3333, 15);
+    }
+
+    // ===== JUICE: Particles =====
+    spawnParticles(pos, colorHex, count) {
+        if (!this.particles) this.particles = [];
+
+        const geo = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+        const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+
+        for (let i = 0; i < count; i++) {
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            mesh.position.y += 0.2; // slight offset up
+
+            // Random velocity
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 0.03 + Math.random() * 0.05;
+            const vy = 0.04 + Math.random() * 0.06;
+
+            mesh.userData = {
+                vx: Math.cos(angle) * speed,
+                vy: vy,
+                vz: Math.sin(angle) * speed,
+                life: 1.0,
+                decay: 0.02 + Math.random() * 0.03
+            };
+
+            this.scene.add(mesh);
+            this.particles.push(mesh);
+        }
     }
 
     // ===== PATIENCE BAR =====
@@ -1266,6 +1304,25 @@ export class CheckoutScene {
         // Patience bar billboard
         if (this.patienceBar) {
             this.patienceBar.lookAt(this.camera.position);
+        }
+
+        // Process Particles
+        if (this.particles && this.particles.length > 0) {
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                const p = this.particles[i];
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
+                p.position.z += p.userData.vz;
+                p.userData.vy -= 0.005; // gravity
+
+                p.userData.life -= p.userData.decay;
+                p.scale.setScalar(Math.max(0, p.userData.life));
+
+                if (p.userData.life <= 0) {
+                    this.scene.remove(p);
+                    this.particles.splice(i, 1);
+                }
+            }
         }
 
         this.renderer.render(this.scene, this.camera);

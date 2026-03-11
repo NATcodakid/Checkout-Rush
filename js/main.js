@@ -57,91 +57,7 @@ const state = {
     elapsedSeconds: 0,
 };
 
-// ===== DOM REFERENCES =====
-const $ = id => document.getElementById(id);
-
-const screens = {
-    landing: $('landing-screen'),
-    auth: $('auth-screen'),
-    title: $('title-screen'),
-    shop: $('shop-screen'),
-    tutorial: $('tutorial-screen'),
-    gameplay: $('gameplay-screen'),
-    results: $('results-screen'),
-};
-
-const ui = {
-    scoreDisplay: $('score-display'),
-    streakDisplay: $('streak-display'),
-    customersDisplay: $('customers-display'),
-    timerDisplay: $('timer-display'),
-
-    itemsList: $('items-list'),
-    totalDisplay: $('total-display'),
-    paymentSection: $('payment-section'),
-    paymentDisplay: $('payment-display'),
-    changeDueDisplay: $('change-due-display'),
-    cashDrawer: $('cash-drawer'),
-    changeGivenDisplay: $('change-given-display'),
-    hintDisplay: $('hint-display'),
-    hintAmount: $('hint-amount'),
-
-    feedbackToast: $('feedback-toast'),
-    toastIcon: $('toast-icon'),
-    toastMessage: $('toast-message'),
-    toastCoins: $('toast-coins'),
-    coinsPopup: $('coins-popup'),
-
-    resultScore: $('result-score'),
-    resultCustomers: $('result-customers'),
-    resultAccuracy: $('result-accuracy'),
-    resultStreak: $('result-streak'),
-    resultTime: $('result-time'),
-    resultsStars: $('results-stars'),
-    resultsTips: $('results-tips'),
-    resultsTitle: $('results-title'),
-    resultCoinsEarned: $('result-coins-earned'),
-    resultsCoinsSummary: $('results-coins-summary'),
-    resultsLevelUp: $('results-level-up'),
-    resultsNextLevel: $('results-next-level'),
-
-    bestStreakDisplay: $('best-streak-display'),
-    titleStats: $('title-stats'),
-    soundToggle: $('sound-toggle'),
-
-    // Level & Coins
-    titleProgress: $('title-progress'),
-    titleLevel: $('title-level'),
-    titleRank: $('title-rank'),
-    titleCoins: $('title-coins'),
-    titleLevelBar: $('title-level-bar'),
-    btnPlayLevel: $('btn-play-level'),
-    hudLevel: $('hud-level'),
-    hudRank: $('hud-rank'),
-    hudCoins: $('hud-coins'),
-
-    // Shop
-    shopGrid: $('shop-grid'),
-    shopCoinsDisplay: $('shop-coins-display'),
-
-    // Auth
-    authForm: $('auth-form'),
-    authEmail: $('auth-email'),
-    authPassword: $('auth-password'),
-    authName: $('auth-name'),
-    authNameField: $('auth-name-field'),
-    authTos: $('auth-tos'),
-    authError: $('auth-error'),
-    authSubmitBtn: $('btn-auth-submit'),
-    authLoading: $('auth-loading'),
-    tosModal: $('tos-modal'),
-
-    // User
-    userBadge: $('user-badge'),
-    guestBadge: $('guest-badge'),
-    userName: $('user-name'),
-    guestResultsCta: $('guest-results-cta'),
-};
+import { $, screens, ui, showScreen, showFeedback, showCoinsPopup, showScanPrompt, hideScanPrompt, spawnFloatingText, formatMoney, formatTime } from './ui.js';
 
 // ===== INIT =====
 function init() {
@@ -149,8 +65,8 @@ function init() {
     Analytics.init();
 
     // ===== LANDING PAGE BUTTONS =====
-    const goToSignup = () => { state.authMode = 'signup'; setAuthTab('signup'); showScreen('auth'); };
-    const goToSignin = () => { state.authMode = 'signin'; setAuthTab('signin'); showScreen('auth'); };
+    const goToSignup = () => { state.authMode = 'signup'; setAuthTab('signup'); showScreen(state, 'auth'); };
+    const goToSignin = () => { state.authMode = 'signin'; setAuthTab('signin'); showScreen(state, 'auth'); };
     $('btn-landing-play').addEventListener('click', goToSignup);
     $('btn-landing-play2').addEventListener('click', goToSignup);
     $('btn-landing-signin').addEventListener('click', goToSignin);
@@ -159,7 +75,7 @@ function init() {
     $('btn-landing-guest2').addEventListener('click', playAsGuest);
 
     // Auth back button
-    $('btn-auth-back').addEventListener('click', () => showScreen('landing'));
+    $('btn-auth-back').addEventListener('click', () => showScreen(state, 'landing'));
 
     // Guest buttons from auth page and title screen
     $('btn-play-guest-auth').addEventListener('click', playAsGuest);
@@ -190,10 +106,10 @@ function init() {
 
     // Game buttons
     $('btn-play').addEventListener('click', startGame);
-    $('btn-shop').addEventListener('click', () => { renderShop(); showScreen('shop'); GameAudio.playSFX('coinClink'); });
-    $('btn-shop-close').addEventListener('click', () => showScreen('title'));
-    $('btn-how-to-play').addEventListener('click', () => { showScreen('tutorial'); GameAudio.playSFX('coinClink'); });
-    $('btn-tutorial-close').addEventListener('click', () => showScreen('title'));
+    $('btn-shop').addEventListener('click', () => { renderShop(); showScreen(state, 'shop'); GameAudio.playSFX('coinClink'); });
+    $('btn-shop-close').addEventListener('click', () => showScreen(state, 'title'));
+    $('btn-how-to-play').addEventListener('click', () => { showScreen(state, 'tutorial'); GameAudio.playSFX('coinClink'); });
+    $('btn-tutorial-close').addEventListener('click', () => showScreen(state, 'title'));
     $('btn-submit-change').addEventListener('click', submitChange);
     $('btn-clear-change').addEventListener('click', clearChange);
     $('btn-play-again').addEventListener('click', startGame);
@@ -202,7 +118,7 @@ function init() {
         GameAudio.playMusic('menu');
         if (state.scene) { state.scene.dispose(); state.scene = null; }
         updateTitleScreen();
-        showScreen('title');
+        showScreen(state, 'title');
     });
 
     if (ui.soundToggle) {
@@ -212,9 +128,23 @@ function init() {
         });
     }
 
-    // Keyboard: Enter to submit
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (state.screen === 'gameplay' && e.key === 'Enter' && !state.roundLocked) submitChange();
+        if (state.screen !== 'gameplay' || state.roundLocked) return;
+
+        if (e.key === 'Enter') {
+            submitChange();
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+            clearChange();
+        } else if (e.key >= '1' && e.key <= '9') {
+            const index = parseInt(e.key) - 1;
+            const buttons = ui.cashDrawer.querySelectorAll('.money-btn');
+            if (buttons[index]) {
+                // Simulate click on the button so styling and sound trigger
+                buttons[index].click();
+                buttons[index].classList.remove('active'); // ensure no sticking hover
+            }
+        }
     });
 
     // Firebase auth observer — do NOT auto-redirect if user is a guest or on landing
@@ -227,13 +157,13 @@ function init() {
             // Signed out mid-game — go back to landing
             state.currentUser = null;
             state.firestoreProgress = null;
-            showScreen('landing');
+            showScreen(state, 'landing');
         }
     });
 
     GameAudio.playMusic('menu');
     // Start on landing page
-    showScreen('landing');
+    showScreen(state, 'landing');
 }
 
 // ===== AUTH HANDLERS =====
@@ -300,7 +230,7 @@ async function onUserSignedIn(user) {
     }
 
     updateTitleScreen();
-    showScreen('title');
+    showScreen(state, 'title');
 }
 
 function showAuthError(msg) { ui.authError.textContent = msg; ui.authError.style.display = 'block'; }
@@ -325,7 +255,7 @@ function playAsGuest() {
     if (ui.guestBadge) ui.guestBadge.style.display = 'flex';
     ui.titleProgress.style.display = 'none'; // no progress bar for guests
     GameAudio.playMusic('menu');
-    showScreen('title');
+    showScreen(state, 'title');
 }
 function friendlyError(code) {
     const map = {
@@ -341,12 +271,7 @@ function friendlyError(code) {
     return map[code] || 'Something went wrong. Please try again.';
 }
 
-// ===== SCREEN MANAGEMENT =====
-function showScreen(name) {
-    Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
-    if (screens[name]) screens[name].classList.add('active');
-    state.screen = name;
-}
+
 
 // ===== TITLE SCREEN UPDATE =====
 function updateTitleScreen() {
@@ -523,7 +448,7 @@ async function startGame() {
     GameAudio.playMusic('bgm');
     Analytics.startSession('level_' + state.currentLevel);
 
-    showScreen('gameplay');
+    showScreen(state, 'gameplay');
     ui.hudLevel.textContent = state.currentLevel;
     ui.hudCoins.textContent = state.coins;
 
@@ -560,7 +485,7 @@ function nextRound() {
 
     // Show "Click items to scan" prompt for new players (first round only)
     if (state.isFirstScanThisLevel) {
-        showScanPrompt();
+        showScanPrompt(state);
     }
 
     // Start patience countdown
@@ -619,7 +544,11 @@ async function submitChange() {
         state.customersServed++;
 
         GameAudio.playSFX('correct');
-        if (state.streak >= 3) GameAudio.playSFX('streak');
+        if (state.streak >= 2) {
+            if (state.streak >= 3) GameAudio.playSFX('streak');
+            // JUICE: Float streak text
+            spawnFloatingText(`Streak x${state.streak}! 🔥`, window.innerWidth * 0.5, window.innerHeight * 0.4, '#ff6b35');
+        }
 
         showFeedback(true, 'Correct! 🎉', earnedCoins);
         state.scene.flashRegister(true);
@@ -803,7 +732,7 @@ async function endGame(isGameOver = false) {
         ui.guestResultsCta.style.display = state.isGuest ? 'flex' : 'none';
     }
 
-    showScreen('results');
+    showScreen(state, 'results');
 }
 
 // ===== UI =====
@@ -936,83 +865,9 @@ function updateHUD() {
     }
 }
 
-function showFeedback(correct, message, coins) {
-    ui.feedbackToast.className = `feedback-toast ${correct ? 'correct' : 'incorrect'}`;
-    ui.toastIcon.textContent = correct ? '✓' : '✗';
-    ui.toastMessage.textContent = message;
 
-    if (coins > 0) {
-        ui.toastCoins.textContent = `+${coins} 🪙`;
-        ui.toastCoins.style.display = 'inline';
-    } else {
-        ui.toastCoins.style.display = 'none';
-    }
 
-    ui.feedbackToast.style.animation = 'none';
-    ui.feedbackToast.offsetHeight;
-    ui.feedbackToast.style.animation = '';
 
-    setTimeout(() => { ui.feedbackToast.className = 'feedback-toast hidden'; }, 1200);
-}
-
-function showCoinsPopup(amount) {
-    if (amount <= 0) return;
-    ui.coinsPopup.textContent = `+${amount} 🪙`;
-    ui.coinsPopup.style.display = 'block';
-    ui.coinsPopup.style.animation = 'none';
-    ui.coinsPopup.offsetHeight;
-    ui.coinsPopup.style.animation = '';
-    setTimeout(() => { ui.coinsPopup.style.display = 'none'; }, 1200);
-}
-
-// ===== SCAN PROMPT =====
-function showScanPrompt() {
-    let prompt = $('scan-prompt');
-    if (!prompt) {
-        prompt = document.createElement('div');
-        prompt.id = 'scan-prompt';
-        prompt.className = 'scan-prompt';
-        prompt.innerHTML = '<span class="scan-prompt-icon">👆</span> Click items on the counter to scan them!';
-        $('gameplay-screen').appendChild(prompt);
-    }
-    prompt.classList.add('visible');
-    // Auto-dismiss after 5 seconds in case they don't interact
-    clearTimeout(state._scanPromptTimeout);
-    state._scanPromptTimeout = setTimeout(hideScanPrompt, 5000);
-}
-
-function hideScanPrompt() {
-    const prompt = $('scan-prompt');
-    if (prompt) prompt.classList.remove('visible');
-}
-
-// ===== JUICE: Floating Text =====
-function spawnFloatingText(text, x, y, color = '#06d6a0') {
-    const container = $('floating-text-container');
-    if (!container) return;
-
-    const el = document.createElement('div');
-    el.className = 'floating-text';
-    el.textContent = text;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.style.color = color;
-
-    container.appendChild(el);
-
-    // Clean up after animation ends
-    setTimeout(() => {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-    }, 1200);
-}
-
-// ===== UTILITIES =====
-function formatMoney(amount) { return '$' + amount.toFixed(2); }
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 // ===== START =====
 init();
