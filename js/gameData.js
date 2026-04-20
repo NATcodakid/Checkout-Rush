@@ -23,6 +23,12 @@ export const ITEMS = [
     { name: 'Grapes', emoji: '🍇', color: 0x7b2cbf, priceRange: [1.00, 2.19, 3.57] },
     { name: 'Watermelon', emoji: '🍉', color: 0x38b000, priceRange: [2.00, 3.49, 5.93] },
     { name: 'Pizza', emoji: '🍕', color: 0xe85d04, priceRange: [1.50, 3.29, 5.47] },
+    { name: 'Beans', emoji: '🥫', color: 0x888888, priceRange: [0.75, 1.25, 1.99] },
+    { name: 'Cola', emoji: '🥤', color: 0xe60000, priceRange: [1.00, 1.99, 2.99] },
+    { name: 'Canned Food', emoji: '🥫', color: 0xb0c4de, priceRange: [0.89, 1.59, 2.89] },
+    { name: 'Cereal', emoji: '🥣', color: 0xfffacd, priceRange: [2.50, 4.49, 6.89] },
+    { name: 'Meat', emoji: '🥩', color: 0xff6347, priceRange: [4.50, 8.99, 14.50] },
+    { name: 'Motor Oil', emoji: '🛢️', color: 0x696969, priceRange: [5.00, 9.99, 18.50] },
 ];
 
 // ===== 20 PROGRESSIVE LEVELS =====

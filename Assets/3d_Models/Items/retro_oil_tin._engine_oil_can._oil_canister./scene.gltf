@@ -1,0 +1,616 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.03322736546397209,
+        0.04700499773025513,
+        0.06762555241584778
+      ],
+      "min": [
+        -0.033227384090423584,
+        -0.04700499773025513,
+        -0.0517098531126976
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 17304,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.999999463558197,
+        0.9999905824661255,
+        1.0
+      ],
+      "min": [
+        -0.9999964237213135,
+        -0.9999991655349731,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9999774098396301,
+        1.0,
+        0.997287929058075,
+        1.0
+      ],
+      "min": [
+        -0.9999966621398926,
+        -0.9999849200248718,
+        -0.9999998211860657,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 11536,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 7386,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 34608,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.03322736546397209,
+        0.04700499773025513,
+        0.06762555241584778
+      ],
+      "min": [
+        -0.033227384090423584,
+        -0.04700499773025513,
+        -0.0517098531126976
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 51912,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.999999463558197,
+        0.9999905824661255,
+        1.0
+      ],
+      "min": [
+        -0.9999964237213135,
+        -0.9999991655349731,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 23072,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9999774098396301,
+        1.0,
+        0.997287929058075,
+        1.0
+      ],
+      "min": [
+        -0.9999966621398926,
+        -0.9999849200248718,
+        -0.9999998211860657,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 23072,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 34608,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 29544,
+      "componentType": 5125,
+      "count": 7386,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 69216,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.03322736546397209,
+        0.04700499773025513,
+        0.06762555241584778
+      ],
+      "min": [
+        -0.033227384090423584,
+        -0.04700499773025513,
+        -0.0517098531126976
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 86520,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.999999463558197,
+        0.9999905824661255,
+        1.0
+      ],
+      "min": [
+        -0.9999964237213135,
+        -0.9999991655349731,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 46144,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9999774098396301,
+        1.0,
+        0.997287929058075,
+        1.0
+      ],
+      "min": [
+        -0.9999966621398926,
+        -0.9999849200248718,
+        -0.9999998211860657,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 46144,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 57680,
+      "componentType": 5126,
+      "count": 1442,
+      "max": [
+        0.9987228512763977,
+        0.990426242351532
+      ],
+      "min": [
+        0.0005116262473165989,
+        0.004610838834196329
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 59088,
+      "componentType": 5125,
+      "count": 7386,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "VladIG_CG (https://sketchfab.com/VladIG_CG)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/retro-oil-tin-engine-oil-can-oil-canister-e5ff8822349e4244a631b865a143447e",
+      "title": "Retro Oil tin. Engine oil can. Oil canister."
+    },
+    "generator": "Sketchfab-15.17.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 88632,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 69216,
+      "byteOffset": 88632,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 103824,
+      "byteOffset": 157848,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 69216,
+      "byteOffset": 261672,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 330888,
+      "uri": "scene.bin"
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/RetroOilTin_Cities_baseColor.png"
+    },
+    {
+      "uri": "textures/RetroOilTin_Cities_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/RetroOilTin_Cities_normal.png"
+    },
+    {
+      "uri": "textures/RetroOilTin_USSR_baseColor.png"
+    },
+    {
+      "uri": "textures/RetroOilTin_Shell_baseColor.png"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "RetroOilTin_Cities",
+      "normalTexture": {
+        "index": 2
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "RetroOilTin_USSR",
+      "normalTexture": {
+        "index": 2
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "RetroOilTin_Shell",
+      "normalTexture": {
+        "index": 2
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 4
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "TinBody_Cities_RetroOilTin_Cities_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3,
+            "TEXCOORD_1": 4
+          },
+          "indices": 5,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "TinBody_USSR_RetroOilTin_USSR_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 7,
+            "POSITION": 6,
+            "TANGENT": 8,
+            "TEXCOORD_0": 9,
+            "TEXCOORD_1": 10
+          },
+          "indices": 11,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "TinBody_Shell_RetroOilTin_Shell_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 13,
+            "POSITION": 12,
+            "TANGENT": 14,
+            "TEXCOORD_0": 15,
+            "TEXCOORD_1": 16
+          },
+          "indices": 17,
+          "material": 2,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        7.4810967445373535,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.6611371710467345e-15,
+        -7.4810967445373535,
+        0.0,
+        0.0,
+        7.4810967445373535,
+        1.6611371710467345e-15,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "6b18069b73824b7990c48be200df3279.fbx"
+    },
+    {
+      "children": [
+        3,
+        5,
+        7
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4
+      ],
+      "matrix": [
+        92.58760851275854,
+        -17.49434048889634,
+        33.488547307202296,
+        0.0,
+        34.65001191668855,
+        3.9781580814720914,
+        -93.72059222269836,
+        0.0,
+        15.06357330983933,
+        98.3774481612659,
+        9.745073238130786,
+        0.0,
+        6.572083950042725,
+        7.221107006072998,
+        5.041930675506592,
+        1.0
+      ],
+      "name": "TinBody_Cities"
+    },
+    {
+      "mesh": 0,
+      "name": "TinBody_Cities_RetroOilTin_Cities_0"
+    },
+    {
+      "children": [
+        6
+      ],
+      "matrix": [
+        90.76732948881333,
+        -9.341119322129355,
+        -40.91497754220256,
+        0.0,
+        -38.4464004977644,
+        20.582805997179392,
+        -89.99011534701536,
+        0.0,
+        16.827535787826708,
+        97.41196806577751,
+        15.091140343305787,
+        0.0,
+        4.966465473175049,
+        12.206645011901855,
+        -10.15550422668457,
+        1.0
+      ],
+      "name": "TinBody_USSR"
+    },
+    {
+      "mesh": 1,
+      "name": "TinBody_USSR_RetroOilTin_USSR_0"
+    },
+    {
+      "children": [
+        8
+      ],
+      "matrix": [
+        93.90982533671543,
+        5.772847496315446,
+        -33.87654738740136,
+        0.0,
+        -33.37212115711571,
+        -8.203902961730057,
+        -93.90950952800499,
+        0.0,
+        -8.200451218391681,
+        99.49557121937724,
+        -5.777748840661149,
+        0.0,
+        -4.034750938415527,
+        20.765108108520508,
+        -5.305448667058954e-07,
+        1.0
+      ],
+      "name": "TinBody_Shell"
+    },
+    {
+      "mesh": 2,
+      "name": "TinBody_Shell_RetroOilTin_Shell_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    },
+    {
+      "sampler": 0,
+      "source": 3
+    },
+    {
+      "sampler": 0,
+      "source": 4
+    }
+  ]
+}

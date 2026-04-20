@@ -416,6 +416,28 @@ async function startGame() {
     state.elapsedSeconds = 0;
     state.roundLocked = false;
 
+    // Show loading spinner
+    let spinner = document.getElementById('loading-spinner');
+    if (!spinner) {
+        spinner = document.createElement('div');
+        spinner.id = 'loading-spinner';
+        spinner.innerHTML = '<div class="spinner"></div><div style="margin-top:1.5rem;font-size:1.2rem;font-weight:bold;color:#fff">Loading Checkout Rush...</div>';
+        spinner.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.3s;';
+        const style = document.createElement('style');
+        style.textContent = `
+            .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.2); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(style);
+        document.body.appendChild(spinner);
+    }
+    spinner.style.display = 'flex';
+    spinner.style.opacity = '1';
+
+    // Start music synchronously so strict browsers don't block playback post-model async loading
+    GameAudio.stopMusic();
+    GameAudio.playMusic('bgm');
+
     // Init 3D scene
     if (!state.scene) {
         const container = $('three-container');
@@ -426,6 +448,10 @@ async function startGame() {
     } else {
         await state.scene.waitForLoad();
     }
+
+    // Hide loading spinner
+    spinner.style.opacity = '0';
+    setTimeout(() => spinner.style.display = 'none', 300);
 
     // Set patience BEFORE setupQueue so the first customer gets a bar
     state.scene.setPatienceMax(lvl.patience || 0);
@@ -452,8 +478,6 @@ async function startGame() {
     // Show first-scan prompt for first round only (cleared after first click)
     state.isFirstScanThisLevel = true;
 
-    GameAudio.stopMusic();
-    GameAudio.playMusic('bgm');
     Analytics.startSession('level_' + state.currentLevel);
 
     showScreen(state, 'gameplay');
