@@ -163,7 +163,6 @@ export class CheckoutScene {
     constructor(container, onScanCallback) {
         this.container = container;
         this.mixers = [];
-        this.clock = new THREE.Clock();
         this.onScan = onScanCallback;
 
         this.scene = null;
@@ -386,9 +385,7 @@ export class CheckoutScene {
         }, undefined, (error) => { console.error("Error loading supermarket:", error); });
     }
 
-    _populateShelves() {
-        // Shelves are now handled by the loaded supermarket environment
-    }
+
 
     // ===== COUNTER =====
     _buildCounter() {
@@ -703,31 +700,7 @@ export class CheckoutScene {
         this.scene.add(g);
     }
 
-    // ===== WALLPAPER =====
-    applyWallpaper(wallpaperConfig) {
-        if (!wallpaperConfig) return;
-        // Find back wall mesh
-        this.scene.traverse(child => {
-            if (child.isMesh && child.geometry?.parameters?.width === 20
-                && child.geometry?.parameters?.height === 5
-                && child.geometry?.parameters?.depth === 0.15) {
-                // This is the back wall
-                child.material.color.setHex(wallpaperConfig.color);
-                child.material.needsUpdate = true;
-            }
-        });
-        // Update floor mat color if provided
-        if (wallpaperConfig.floorColor) {
-            this.scene.traverse(child => {
-                if (child.isMesh && child.geometry?.type === 'PlaneGeometry'
-                    && child.geometry?.parameters?.width === 2.5
-                    && child.geometry?.parameters?.height === 1.2) {
-                    child.material.color.setHex(wallpaperConfig.floorColor);
-                    child.material.needsUpdate = true;
-                }
-            });
-        }
-    }
+
 
     // ===== CHARACTERS =====
     _buildCharacter(style) {

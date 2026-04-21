@@ -37,7 +37,7 @@ export const UPGRADES = [
     {
         id: 'lucky_scanner',
         name: 'Lucky Scanner',
-        description: 'Auto-scans one item per customer',
+        description: 'Auto-scans one item per round for one level',
         cost: 150,
         iconSvg: '#icon-scan',
         maxOwned: 3,
@@ -62,52 +62,7 @@ export const UPGRADES = [
         maxOwned: 1,
         effect: { type: 'tip_bonus', value: 0.2 },
     },
-    // ===== WALLPAPERS =====
-    {
-        id: 'wallpaper_sunset',
-        name: 'Sunset Vibes',
-        description: 'Warm orange walls for your store',
-        cost: 80,
-        iconSvg: '#icon-sparkles',
-        maxOwned: 1,
-        effect: { type: 'wallpaper', value: 'sunset' },
-    },
-    {
-        id: 'wallpaper_ocean',
-        name: 'Ocean Breeze',
-        description: 'Cool blue walls with teal floor mat',
-        cost: 80,
-        iconSvg: '#icon-sparkles',
-        maxOwned: 1,
-        effect: { type: 'wallpaper', value: 'ocean' },
-    },
-    {
-        id: 'wallpaper_cafe',
-        name: 'Cozy Café',
-        description: 'Rich brown brick walls',
-        cost: 100,
-        iconSvg: '#icon-sparkles',
-        maxOwned: 1,
-        effect: { type: 'wallpaper', value: 'cafe' },
-    },
-    {
-        id: 'wallpaper_neon',
-        name: 'Neon Night',
-        description: 'Dark walls with neon accents',
-        cost: 150,
-        iconSvg: '#icon-sparkles',
-        maxOwned: 1,
-        effect: { type: 'wallpaper', value: 'neon' },
-    },
 ];
-
-export const WALLPAPER_CONFIGS = {
-    sunset: { color: 0xffba6c, floorColor: 0x8b5e3c },
-    ocean: { color: 0xb8d8e8, floorColor: 0x2a7886 },
-    cafe: { color: 0x8b6f47, floorColor: 0x5c3a1e },
-    neon: { color: 0x1a1a2e, floorColor: 0x6c2dc7 },
-    default: { color: 0xfaf3e0, floorColor: 0x3a6b35 },
-};
 
 /**
  * Shop state management.
@@ -117,21 +72,17 @@ export class Shop {
     constructor() {
         this.ownedUpgrades = {};
         this.activeConsumables = {};
-        /** Key of the wallpaper the player has chosen to use, or null */
-        this.activeWallpaper = null;
     }
 
     loadFromFirestore(data) {
         this.ownedUpgrades = data?.ownedUpgrades || {};
         this.activeConsumables = data?.activeConsumables || {};
-        this.activeWallpaper = data?.activeWallpaper || null;
     }
 
     getSerializable() {
         return {
             ownedUpgrades: { ...this.ownedUpgrades },
             activeConsumables: { ...this.activeConsumables },
-            activeWallpaper: this.activeWallpaper,
         };
     }
 
@@ -172,39 +123,6 @@ export class Shop {
         this.activeConsumables = {};
     }
 
-    // ===== WALLPAPER SELECTION =====
-    /** Explicitly set which wallpaper is active. Pass null to revert to default. */
-    setActiveWallpaper(wpValue) {
-        this.activeWallpaper = wpValue;
-    }
-
-    /**
-     * Returns the wallpaper value string ('sunset', 'ocean', etc.)
-     * Uses the explicitly selected wallpaper, or falls back to the first owned one.
-     */
-    getActiveWallpaper() {
-        // Use explicit choice if it's still owned
-        if (this.activeWallpaper) {
-            const id = `wallpaper_${this.activeWallpaper}`;
-            if ((this.ownedUpgrades[id] || 0) > 0) return this.activeWallpaper;
-        }
-        // Fallback: first owned wallpaper
-        for (const [id, count] of Object.entries(this.ownedUpgrades)) {
-            if (id.startsWith('wallpaper_') && count > 0) {
-                const upgrade = UPGRADES.find(u => u.id === id);
-                if (upgrade) return upgrade.effect.value;
-            }
-        }
-        return null;
-    }
-
-    /** Returns all wallpaper upgrade IDs that the player owns */
-    getOwnedWallpapers() {
-        return UPGRADES.filter(u =>
-            u.effect?.type === 'wallpaper' && (this.ownedUpgrades[u.id] || 0) > 0
-        );
-    }
-
     // ===== EFFECT GETTERS =====
     getTimerBonus() {
         const owned = this.ownedUpgrades['speed_boost'] || 0;
@@ -233,4 +151,13 @@ export class Shop {
         if (this.activeConsumables['lucky_scanner']) return 1;
         return 0;
     }
+
+    /**
+     * Returns the count of a specific consumable that the player owns
+     * (hasn't activated yet). Useful for showing "X remaining" in shop.
+     */
+    getConsumableStockCount(upgradeId) {
+        return this.ownedUpgrades[upgradeId] || 0;
+    }
 }
+

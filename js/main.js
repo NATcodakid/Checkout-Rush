@@ -8,7 +8,7 @@ import { CheckoutScene } from './scene.js';
 import { generateRound, DENOMINATIONS, LEVELS, calculateCoins } from './gameData.js';
 import { Analytics } from './analytics.js';
 import { GameAudio } from './audio.js';
-import { Shop, UPGRADES, WALLPAPER_CONFIGS } from './shop.js';
+import { Shop, UPGRADES } from './shop.js';
 import {
     signUpEmail, signInEmail, signInGoogle, signOutUser,
     onAuthChange, getCurrentUser,
@@ -290,9 +290,11 @@ function updateTitleScreen() {
     ui.titleCoins.textContent = state.coins;
     if (ui.btnPlayLevel) ui.btnPlayLevel.textContent = state.currentLevel;
 
-    // XP bar: progress within current tier
-    const tierStart = state.currentLevel <= 3 ? 1 : state.currentLevel <= 6 ? 4 : state.currentLevel <= 10 ? 7 : state.currentLevel <= 14 ? 11 : state.currentLevel <= 18 ? 15 : 19;
-    const tierEnd = state.currentLevel <= 3 ? 3 : state.currentLevel <= 6 ? 6 : state.currentLevel <= 10 ? 10 : state.currentLevel <= 14 ? 14 : state.currentLevel <= 18 ? 18 : 20;
+    // XP bar: progress within current tier (10 tiers of 5 levels each)
+    const TIER_SIZE = 5;
+    const tierIndex = Math.floor((state.currentLevel - 1) / TIER_SIZE);
+    const tierStart = tierIndex * TIER_SIZE + 1;
+    const tierEnd = Math.min(tierStart + TIER_SIZE - 1, LEVELS.length);
     const tierSpan = tierEnd - tierStart;
     const pct = tierSpan > 0 ? ((state.currentLevel - tierStart) / tierSpan) * 100 : 100;
     ui.titleLevelBar.style.width = `${Math.min(pct, 100)}%`;
@@ -317,31 +319,22 @@ function renderShop() {
     ui.shopCoinsDisplay.textContent = state.coins;
     ui.shopGrid.innerHTML = '';
 
-    const activeWp = state.shop.getActiveWallpaper();
-
     UPGRADES.forEach(upgrade => {
         const owned = state.shop.getOwnedCount(upgrade.id);
         const canBuy = state.shop.canBuy(upgrade.id, state.coins);
         const maxed = owned >= upgrade.maxOwned;
-        const isWallpaper = upgrade.effect?.type === 'wallpaper';
-        const isActiveWp = isWallpaper && upgrade.effect.value === activeWp;
 
         const card = document.createElement('div');
-        card.className = `shop-card ${maxed ? 'owned' : ''} ${isActiveWp ? 'active-wallpaper' : ''}`;
+        card.className = `shop-card ${maxed ? 'owned' : ''}`;
 
-        // Build action area: buy button, owned indicator, or wallpaper set-active button
+        // Build action area: buy button or owned indicator
         let actionHTML = '';
-        if (maxed || (owned > 0 && isWallpaper)) {
+        if (maxed) {
             const ownedLabel = upgrade.maxOwned > 1
                 ? `Owned (${owned}/${upgrade.maxOwned})`
                 : `Owned`;
             actionHTML = `<div class="shop-card-owned">${ownedLabel}</div>`;
-            if (isWallpaper) {
-                actionHTML += isActiveWp
-                    ? `<div class="shop-card-active-badge">✦ Active</div>`
-                    : `<button class="shop-card-btn shop-card-set-active">🎨 Set Active</button>`;
-            }
-        } else if (!maxed) {
+        } else {
             actionHTML = canBuy
                 ? `<button class="shop-card-btn">Buy</button>`
                 : `<button class="shop-card-btn" disabled>Not enough coins</button>`;
@@ -357,30 +350,11 @@ function renderShop() {
         `;
 
         // Buy button
-        const buyBtn = card.querySelector('.shop-card-btn:not(.shop-card-set-active)');
+        const buyBtn = card.querySelector('.shop-card-btn');
         if (buyBtn && canBuy && !maxed) {
             buyBtn.addEventListener('click', () => {
-                const boughtUpgrade = state.shop.buy(upgrade.id);
+                state.shop.buy(upgrade.id);
                 state.coins -= upgrade.cost;
-                GameAudio.playSFX('coinClink');
-                // Auto-activate consumables immediately on purchase
-                if (boughtUpgrade && boughtUpgrade.consumable) {
-                    state.shop.activateConsumable(upgrade.id);
-                }
-                // Auto-select first wallpaper bought
-                if (isWallpaper && !state.shop.getActiveWallpaper()) {
-                    state.shop.setActiveWallpaper(upgrade.effect.value);
-                }
-                saveShopState();
-                renderShop();
-            });
-        }
-
-        // Wallpaper "Set Active" button
-        const setActiveBtn = card.querySelector('.shop-card-set-active');
-        if (setActiveBtn) {
-            setActiveBtn.addEventListener('click', () => {
-                state.shop.setActiveWallpaper(upgrade.effect.value);
                 GameAudio.playSFX('coinClink');
                 saveShopState();
                 renderShop();
@@ -438,13 +412,21 @@ async function startGame() {
     GameAudio.stopMusic();
     GameAudio.playMusic('bgm');
 
+    // Activate any owned consumables for this game session
+    state.shop.clearConsumables();
+    if (state.shop.getOwnedCount('double_coins') > 0) {
+        state.shop.activateConsumable('double_coins');
+    }
+    if (state.shop.getOwnedCount('lucky_scanner') > 0) {
+        state.shop.activateConsumable('lucky_scanner');
+    }
+
     // Init 3D scene
     if (!state.scene) {
         const container = $('three-container');
         container.innerHTML = '';
         state.scene = new CheckoutScene(container, handleItemScanned);
         await state.scene.waitForLoad();
-        state.scene._populateShelves();
     } else {
         await state.scene.waitForLoad();
     }
@@ -464,15 +446,6 @@ async function startGame() {
     } else if (state.scene.scanRing) {
         state.scene.scanRing.material.color.setHex(0x00ff88);
         state.scene.scanRing.material.emissive.setHex(0x00cc66);
-    }
-
-    // Always re-apply wallpaper (covers upgrades purchased mid-session)
-    const wpKey = state.shop.getActiveWallpaper();
-    if (wpKey && WALLPAPER_CONFIGS[wpKey]) {
-        state.scene.applyWallpaper(WALLPAPER_CONFIGS[wpKey]);
-    } else {
-        // Restore default store colours
-        state.scene.applyWallpaper(WALLPAPER_CONFIGS['default']);
     }
 
     // Show first-scan prompt for first round only (cleared after first click)
@@ -518,6 +491,19 @@ function nextRound() {
     // Show "Click items to scan" prompt for new players (first round only)
     if (state.isFirstScanThisLevel) {
         showScanPrompt(state);
+    }
+
+    // Lucky Scanner auto-scan: auto-scan the first item if the upgrade is active
+    const autoScanCount = state.shop.getAutoScanCount();
+    if (autoScanCount > 0 && state.scene.itemMeshes.length > 0) {
+        setTimeout(() => {
+            for (let i = 0; i < Math.min(autoScanCount, state.scene.itemMeshes.length); i++) {
+                const mesh = state.scene.itemMeshes[0]; // always take first (it gets removed from array during scan)
+                if (mesh && mesh.userData && mesh.userData.isItem) {
+                    state.scene._autoScan(mesh);
+                }
+            }
+        }, 600); // slight delay so player can see the auto-scan happen
     }
 
     clearInterval(state.patienceInterval);
@@ -675,7 +661,6 @@ async function endGame(isGameOver = false) {
     clearInterval(state.timerInterval);
     clearInterval(state.patienceInterval);
     state.scene.removePatienceBar();
-    state.shop.clearConsumables();
 
     GameAudio.playSFX('roundEnd');
     GameAudio.stopMusic();
@@ -700,6 +685,13 @@ async function endGame(isGameOver = false) {
         ui.resultsStars.innerHTML = starsHTML;
     }
     if (ui.resultCoinsEarned) ui.resultCoinsEarned.textContent = state.coinsEarnedThisGame;
+
+    // First-game completion bonus (25 coins)
+    if (!state.isGuest && state.firestoreProgress && (state.firestoreProgress.totalGames || 0) === 0) {
+        const bonusCoins = 25;
+        state.coins += bonusCoins;
+        state.coinsEarnedThisGame += bonusCoins;
+    }
 
     // Level up logic
     const canLevelUp = !isGameOver && accuracy >= 50 && state.currentLevel < LEVELS.length;
