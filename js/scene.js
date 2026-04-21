@@ -171,7 +171,11 @@ export class CheckoutScene {
         this.clock = new THREE.Clock();
         this.loadingManager = new THREE.LoadingManager();
         this.loadingManager.onLoad = () => {
+            this._loadCompleted = true;
             if (this.onModelsLoaded) this.onModelsLoaded();
+        };
+        this.loadingManager.onError = (url) => {
+            console.warn('[Checkout Rush] Error loading asset:', url);
         };
         this.gltfLoader = new GLTFLoader(this.loadingManager);
 
@@ -197,6 +201,9 @@ export class CheckoutScene {
         // Models
         this.loadedModels = {};
         this.registerModel = null;
+        this._envLoaded = false;
+        this._registerLoaded = false;
+        this._loadCompleted = false;
 
         // Patience bar
         this.patienceBar = null;
@@ -219,16 +226,47 @@ export class CheckoutScene {
 
     waitForLoad() {
         return new Promise(resolve => {
+            let loaded = false;
+            const finalize = () => {
+                if (loaded) return;
+                loaded = true;
+                resolve();
+            };
+
+            if (this._loadCompleted) {
+                finalize();
+                return;
+            }
+
+            // Hook onto the loading manager
+            const originalOnLoad = this.loadingManager.onLoad;
+            this.loadingManager.onLoad = () => {
+                this._loadCompleted = true;
+                if (originalOnLoad) originalOnLoad();
+                finalize();
+            };
+
             const check = () => {
-                // Ensure ALL basic models are resolved (or errored) and all avatars are resolved
-                if (this._modelsAttempted >= this._targetModelCount && this._avatarsAttempted >= this._targetAvatarCount && this.loadedAvatars.length > 0) {
-                    resolve();
+                if (loaded) return;
+                
+                // Fallback logical check in case LoadingManager gets stuck
+                if (this._modelsAttempted >= this._targetModelCount && 
+                    this._avatarsAttempted >= this._targetAvatarCount && 
+                    this._envLoaded && this._registerLoaded) {
+                    finalize();
                 } else {
-                    setTimeout(check, 100);
+                    setTimeout(check, 250);
                 }
             };
             check();
-            setTimeout(resolve, 8000); // 8s safety fallback for slow network
+            
+            // Extend fallback to 60s for slow networks
+            setTimeout(() => {
+                if (!loaded) {
+                    console.warn('[Checkout Rush] Loading timeout hit, forcing resolution.');
+                    finalize();
+                }
+            }, 60000);
         });
     }
 
@@ -328,6 +366,7 @@ export class CheckoutScene {
     _buildStore() {
         // Load the new low-poly supermarket environment
         this.gltfLoader.load('super-market-low-poly-for-free/source/supermarket.glb', (gltf) => {
+            this._envLoaded = true;
             const env = gltf.scene;
             
             // Calculate bounding box and recenter
@@ -382,7 +421,10 @@ export class CheckoutScene {
             
             this.scene.add(wrapper);
 
-        }, undefined, (error) => { console.error("Error loading supermarket:", error); });
+        }, undefined, (error) => { 
+            this._envLoaded = true;
+            console.error("Error loading supermarket:", error); 
+        });
     }
 
 
@@ -585,6 +627,7 @@ export class CheckoutScene {
         this._buildProceduralRegister();
 
         this.gltfLoader.load('Assets/3d_Models/Register.glb', (gltf) => {
+            this._registerLoaded = true;
             const model = gltf.scene;
 
             const box = new THREE.Box3().setFromObject(model);
@@ -622,7 +665,10 @@ export class CheckoutScene {
 
             this.registerModel = model;
             this.scene.add(model);
-        }, undefined, () => { /* keep procedural fallback */ });
+        }, undefined, () => { 
+            this._registerLoaded = true;
+            /* keep procedural fallback */ 
+        });
     }
 
     _buildProceduralRegister() {

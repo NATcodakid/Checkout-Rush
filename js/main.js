@@ -395,7 +395,7 @@ async function startGame() {
     if (!spinner) {
         spinner = document.createElement('div');
         spinner.id = 'loading-spinner';
-        spinner.innerHTML = '<div class="spinner"></div><div style="margin-top:1.5rem;font-size:1.2rem;font-weight:bold;color:#fff">Loading Checkout Rush...</div>';
+        spinner.innerHTML = '<div class="spinner"></div><div id="loading-progress-text" style="margin-top:1.5rem;font-size:1.2rem;font-weight:bold;color:#fff">Loading Checkout Rush...</div>';
         spinner.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.3s;';
         const style = document.createElement('style');
         style.textContent = `
@@ -405,6 +405,10 @@ async function startGame() {
         document.head.appendChild(style);
         document.body.appendChild(spinner);
     }
+    // Reset progress text each time we show it
+    const progressText = document.getElementById('loading-progress-text');
+    if (progressText) progressText.textContent = 'Loading Checkout Rush... 0%';
+
     spinner.style.display = 'flex';
     spinner.style.opacity = '1';
 
@@ -426,6 +430,18 @@ async function startGame() {
         const container = $('three-container');
         container.innerHTML = '';
         state.scene = new CheckoutScene(container, handleItemScanned);
+        
+        // Setup progression UI callback if possible
+        if (state.scene.loadingManager) {
+            state.scene.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+                const textEl = document.getElementById('loading-progress-text');
+                if (textEl && itemsTotal > 0) {
+                    const pct = Math.round((itemsLoaded / itemsTotal) * 100);
+                    textEl.textContent = `Loading Assets... ${pct}%`;
+                }
+            };
+        }
+
         await state.scene.waitForLoad();
     } else {
         await state.scene.waitForLoad();
