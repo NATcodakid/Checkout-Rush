@@ -624,13 +624,14 @@ async function submitChange() {
     // Show coins popup
     showCoinsPopup(earnedCoins);
 
-    await new Promise(r => setTimeout(r, 1200));
-    await state.scene.advanceQueue();
-
+    await new Promise(r => setTimeout(r, 600));
+    
+    // Start advancing the line, and fill the back of the line simultaneously
+    const advancePromise = state.scene.advanceQueue();
     const maxCustomers = lvl.customers;
     if (state.roundIndex < maxCustomers) state.scene.addToQueue();
 
-    await new Promise(r => setTimeout(r, 300));
+    await advancePromise;
     nextRound();
 }
 
@@ -658,18 +659,18 @@ async function onCustomerLeft() {
     updateHUD();
 
     if (state.strikes >= 3) {
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1000));
         endGame(true);
         return;
     }
 
-    await new Promise(r => setTimeout(r, 1200));
-    await state.scene.advanceQueue();
-
+    await new Promise(r => setTimeout(r, 600));
+    
+    const advancePromise = state.scene.advanceQueue();
     const lvl = getLevelConfig();
     if (state.roundIndex < lvl.customers) state.scene.addToQueue();
 
-    await new Promise(r => setTimeout(r, 300));
+    await advancePromise;
     nextRound();
 }
 

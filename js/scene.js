@@ -893,29 +893,28 @@ export class CheckoutScene {
         return new Promise((resolve) => {
             if (this.activeCustomer) {
                 const leaving = this.activeCustomer;
-                this._animateObj(leaving, { x: -5 }, 700, () => this.scene.remove(leaving));
+                this._animateObj(leaving, { x: -5 }, 500, () => this.scene.remove(leaving));
             }
             this.activeCustomer = null;
 
             if (this.customerQueue.length === 0) { resolve(); return; }
 
-            setTimeout(() => {
-                this.activeCustomer = this.customerQueue.shift();
-                this.activeCustomer.lookAt(new THREE.Vector3(0, 0, 1.4));
+            // Immediately shift queue synchronously with the leaving customer
+            this.activeCustomer = this.customerQueue.shift();
+            this.activeCustomer.lookAt(new THREE.Vector3(0, 0, 1.4));
 
-                // Add patience bar to new active customer
-                this.removePatienceBar();
-                if (this.patienceMax > 0) this._createPatienceBar(this.activeCustomer);
-                this.patienceCurrent = this.patienceMax;
+            this.removePatienceBar();
+            if (this.patienceMax > 0) this._createPatienceBar(this.activeCustomer);
+            this.patienceCurrent = this.patienceMax;
 
-                const all = [this.activeCustomer, ...this.customerQueue];
-                all.forEach((c, i) => {
-                    if (this.queuePositions[i]) {
-                        this._animateObj(c, { x: this.queuePositions[i].x, z: this.queuePositions[i].z }, 500);
-                    }
-                });
-                setTimeout(resolve, 550);
-            }, 350);
+            const all = [this.activeCustomer, ...this.customerQueue];
+            all.forEach((c, i) => {
+                if (this.queuePositions[i]) {
+                    this._animateObj(c, { x: this.queuePositions[i].x, z: this.queuePositions[i].z }, 500);
+                }
+            });
+            
+            setTimeout(resolve, 500);
         });
     }
 

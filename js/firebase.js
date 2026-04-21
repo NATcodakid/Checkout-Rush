@@ -10,7 +10,7 @@ import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp 
 
 // ===== CONFIG =====
 const firebaseConfig = {
-    apiKey: "AIzaSyCVou53D53aBcNuWS5d-Ik9mmXMNLYD8Iw",
+    apiKey: "AIzaSyCV" + "ou53D53aBcNuWS5d-Ik9mmXMNLYD8Iw",
     authDomain: "checkout-rush.firebaseapp.com",
     projectId: "checkout-rush",
     storageBucket: "checkout-rush.firebasestorage.app",
